@@ -1,4 +1,4 @@
 <Solution>
   <Project Path="src/Moggy.Ecs/Moggy.Ecs.csproj" />
-  <Project Path="src/Moggy.Game/Moggy.Game.csproj" />
+  <Project Path="src/Moggy/Moggy.csproj" />
 </Solution>
