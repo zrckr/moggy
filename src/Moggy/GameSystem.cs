@@ -1,15 +1,18 @@
 ﻿using Foster.Framework;
+using Moggy.Assets;
 using Moggy.Ecs;
 
 namespace Moggy;
 
 public abstract class GameSystem
 {
-    public required Registry Registry { protected get; init; }
+    public App App { protected get; init; } = null!;
 
-    public required GraphicsDevice GraphicsDevice { protected get; init; }
+    public Registry Registry { protected get; init; } = null!;
 
-    public required Window Window { protected get; init; }
+    public AssetLoader Assets { protected get; init; } = null!;
+
+    public Batcher Batcher { protected get; init; } = null!;
 
     public virtual void Startup()
     {

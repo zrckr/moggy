@@ -1,13 +1,16 @@
 ﻿using Foster.Framework;
+using Moggy.Assets;
 using Moggy.Ecs;
 
 namespace Moggy;
 
-class Game : App
+public class Game : App
 {
     private readonly List<GameSystem> _systems = new();
 
     private readonly Registry _registry = new();
+
+    private AssetLoader _assets = null!;
 
     private Batcher _batcher = null!;
 
@@ -44,6 +47,20 @@ class Game : App
     protected override void Startup()
     {
         _batcher = new Batcher(GraphicsDevice);
+
+        #region Loaders
+
+        _assets = new AssetLoader(this);
+        _assets.Register<Sprite>();
+
+        #endregion
+
+        #region Systems
+
+        RegisterSystem<PlayerSystem>();
+        RegisterSystem<SpriteSystem>();
+
+        #endregion
     }
 
     protected override void Update()
@@ -64,6 +81,7 @@ class Game : App
 
         _batcher.Render(Window);
         _batcher.Clear();
+        _assets.Check();
     }
 
     protected override void Shutdown()
@@ -74,15 +92,21 @@ class Game : App
         }
 
         _systems.Clear();
+        _assets.Dispose();
+        _batcher.Dispose();
     }
 
-    private void AddSystem<TSystem>() where TSystem : GameSystem, new()
+    private void RegisterSystem<T>() where T : GameSystem, new()
     {
-        _systems.Add(new TSystem
+        var system = new T
         {
+            App = this,
             Registry = _registry,
-            GraphicsDevice = GraphicsDevice,
-            Window = Window
-        });
+            Assets = _assets,
+            Batcher = _batcher
+        };
+
+        _systems.Add(system);
+        system.Startup();
     }
 }
