@@ -1,12 +1,15 @@
-﻿using System.Numerics;
-using Foster.Framework;
-using ImGuiNET;
+﻿using Foster.Framework;
+using Moggy.Ecs;
 
 namespace Moggy;
 
 class Game : App
 {
-    private readonly ImGuiRenderer _imRenderer;
+    private readonly List<GameSystem> _systems = new();
+
+    private readonly Registry _registry = new();
+
+    private Batcher _batcher = null!;
 
     public static void Main()
     {
@@ -36,57 +39,50 @@ class Game : App
         Resizable = true
     })
     {
-        _imRenderer = new ImGuiRenderer(this);
     }
 
     protected override void Startup()
     {
+        _batcher = new Batcher(GraphicsDevice);
     }
 
     protected override void Update()
     {
-        _imRenderer.BeginLayout();
-
-        // toggle text input if ImGui wants it
-        if (_imRenderer.WantsTextInput)
+        foreach (var system in _systems)
         {
-            Window.StartTextInput();
+            system.Update(Time);
         }
-        else
-        {
-            Window.StopTextInput();
-        }
-
-        ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Appearing);
-        if (ImGui.Begin("Hello Foster x Dear ImGui"))
-        {
-            // custom sprite batcher inside imgui window
-            ImGui.Text("Some Foster Sprite Batching:");
-            var size = new Vector2(ImGui.GetContentRegionAvail().X, 200);
-            if (_imRenderer.BeginBatch(size, out var batch, out var bounds))
-            {
-                batch.CheckeredPattern(bounds, 16, 16, Color.DarkGray, Color.Gray);
-                batch.Circle(bounds.Center, 32, 16, Color.Red);
-            }
-
-            _imRenderer.EndBatch();
-            ImGui.Text("That was pretty cool!");
-        }
-
-        ImGui.End();
-        ImGui.ShowDemoWindow();
-
-        _imRenderer.EndLayout();
     }
 
     protected override void Render()
     {
         Window.Clear(Color.Black);
-        _imRenderer.Render();
+        foreach (var system in _systems)
+        {
+            system.Render(Time);
+        }
+
+        _batcher.Render(Window);
+        _batcher.Clear();
     }
 
     protected override void Shutdown()
     {
-        _imRenderer.Dispose();
+        foreach (var system in _systems)
+        {
+            system.Shutdown();
+        }
+
+        _systems.Clear();
+    }
+
+    private void AddSystem<TSystem>() where TSystem : GameSystem, new()
+    {
+        _systems.Add(new TSystem
+        {
+            Registry = _registry,
+            GraphicsDevice = GraphicsDevice,
+            Window = Window
+        });
     }
 }
