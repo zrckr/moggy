@@ -72,7 +72,7 @@ public class Game : App
 
         RegisterSystem<ViewportSystem>();
         RegisterSystem<CameraSystem>();
-        RegisterSystem<Player>();
+        RegisterSystem<PlayerSystem>();
         RegisterSystem<SpriteRendering>();
 
         #endregion

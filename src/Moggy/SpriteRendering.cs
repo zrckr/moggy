@@ -13,6 +13,8 @@ public struct SpriteRenderer()
     public Vector2 Position;
     public Vector2? ForceOrigin;
     public int PixelSize = 1;
+    public bool FlipHorizontal;
+    public bool FlipVertical;
 }
 
 public struct AnimatedSprite
@@ -58,6 +60,7 @@ public sealed class SpriteRendering : GameSystem
 
     public override void Render(Time time)
     {
+        Batcher.PushSampler(new TextureSampler(TextureFilter.Nearest, TextureWrap.Clamp, TextureWrap.Clamp));
         foreach (var entity in _sprites)
         {
             ref var renderer = ref Registry.Get<SpriteRenderer>(entity);
@@ -82,7 +85,18 @@ public sealed class SpriteRendering : GameSystem
 
             var origin = renderer.ForceOrigin ?? sprite.Frames[0].Subtexture.Size * 0.5f;
             var scale = Vector2.One * Math.Max(1, renderer.PixelSize);
-            Batcher.Image(frame.Subtexture, renderer.Position, origin, scale, 0, Color.White);
+            if (renderer.FlipHorizontal) scale.X *= -1;
+            if (renderer.FlipVertical) scale.Y *= -1;
+
+            var position = SnapPosition(renderer.Position, origin, scale);
+            Batcher.Image(frame.Subtexture, position, origin, scale, 0, Color.White);
         }
+        Batcher.PopSampler();
+    }
+
+    private static Vector2 SnapPosition(Vector2 position, Vector2 origin, Vector2 scale)
+    {
+        var topLeft = position - origin * scale;
+        return new Vector2(MathF.Round(topLeft.X), MathF.Round(topLeft.Y)) + origin * scale;
     }
 }
