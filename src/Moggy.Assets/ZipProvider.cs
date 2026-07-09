@@ -1,12 +1,9 @@
 ﻿using System.IO.Compression;
-using Serilog;
 
 namespace Moggy.Assets;
 
 public sealed class ZipProvider : AssetProvider
 {
-    private static readonly ILogger Logger = Log.ForContext<DirectoryProvider>();
-
     private readonly ZipArchive _archive;
 
     public ZipProvider(Stream stream)
@@ -21,7 +18,6 @@ public sealed class ZipProvider : AssetProvider
         {
             if (NormalizePath(entry.FullName).StartsWith(normalizedPath, StringComparison.OrdinalIgnoreCase))
             {
-                Logger.Debug("Loading asset - {0}", path);
                 return entry.Open();
             }
         }

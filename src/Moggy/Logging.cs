@@ -1,13 +1,15 @@
 ﻿using System.Globalization;
 using Serilog;
 using Serilog.Events;
+using Serilog.Templates;
+using Serilog.Templates.Themes;
 
 namespace Moggy;
 
 static class Logging
 {
     private const string LogTemplate =
-        "({Timestamp:HH:mm:ss.fff}) {Level:u4} [{SourceContext}] {Message:lj}{NewLine}{Exception}";
+        "({UtcDateTime(@t):HH:mm:ss.fff}) {@l:u4} [{Substring(SourceContext, LastIndexOf(SourceContext, '.') + 1)}] {@m}\n{@x}";
 
 #if DEBUG
     private static LogEventLevel Level { get; set; } = LogEventLevel.Debug;
@@ -41,8 +43,8 @@ static class Logging
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Is(Level)
-            .WriteTo.Console(outputTemplate: LogTemplate)
-            .WriteTo.File(logFile, outputTemplate: LogTemplate)
+            .WriteTo.Console(formatter: new ExpressionTemplate(LogTemplate, theme: TemplateTheme.Literate))
+            .WriteTo.File(formatter: new ExpressionTemplate(LogTemplate), path: logFile)
             .CreateLogger();
 
         var logger = Log.ForContext<Game>();

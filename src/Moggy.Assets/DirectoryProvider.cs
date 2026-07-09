@@ -1,11 +1,7 @@
-﻿using Serilog;
-
-namespace Moggy.Assets;
+﻿namespace Moggy.Assets;
 
 public sealed class DirectoryProvider : AssetProvider
 {
-    private static readonly ILogger Logger = Log.ForContext<DirectoryProvider>();
-
     private readonly DirectoryInfo _directory;
 
     public DirectoryProvider(string root)
@@ -21,7 +17,6 @@ public sealed class DirectoryProvider : AssetProvider
             var relativePath = Path.GetRelativePath(_directory.FullName, file.FullName);
             if (NormalizePath(relativePath).Equals(normalizePath, StringComparison.OrdinalIgnoreCase))
             {
-                Logger.Debug("Loading asset - {0}", path);
                 return file.OpenRead();
             }
         }
