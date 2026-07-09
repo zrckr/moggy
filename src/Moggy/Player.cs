@@ -50,8 +50,16 @@ public sealed class PlayerSystem : GameSystem
 
         var player = Registry.Create();
         Registry.Set(player, new Player());
-        Registry.Set(player, new SpriteRenderer { Position = Vector2.Zero, PixelSize = 2 });
-        Registry.Set(player, new AnimatedSprite());
+        Registry.Set(player, new Transform
+        {
+            Position = Vector2.Zero,
+            Scale = new Vector2(2f)
+        });
+        Registry.Set(player, new AnimatedSprite
+        {
+            Animation = FaceDirection.Down.GetAnimationName(),
+            Sprite = _idleSprite
+        });
 
         _inputDevice = new VirtualDevice(App.Input, "Player");
         _inputDevice.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
@@ -61,7 +69,7 @@ public sealed class PlayerSystem : GameSystem
 
         _player = Registry.Query()
             .Include<Player>()
-            .Include<SpriteRenderer>()
+            .Include<Transform>()
             .Include<AnimatedSprite>()
             .Build();
     }
@@ -70,22 +78,25 @@ public sealed class PlayerSystem : GameSystem
     {
         var entity = _player.Single();
         ref var player = ref Registry.Get<Player>(entity);
-        ref var sprite = ref Registry.Get<SpriteRenderer>(entity);
+        ref var transform = ref Registry.Get<Transform>(entity);
         ref var animated = ref Registry.Get<AnimatedSprite>(entity);
 
         switch (player.State)
         {
             case PlayerState.Idle:
-                UpdateIdle(ref player, ref sprite, ref animated);
+                UpdateIdle(ref player, ref animated);
                 break;
 
             case PlayerState.Move:
-                UpdateMove(ref player, ref sprite, ref animated, time);
+                UpdateMove(ref player, ref transform, ref animated, time);
                 break;
         }
+
+        animated.Animation = player.Direction.GetAnimationName();
+        animated.FlipHorizontal = player.Direction.IsAnimationFlipped();
     }
 
-    private void UpdateIdle(ref Player player, ref SpriteRenderer sprite, ref AnimatedSprite animated)
+    private void UpdateIdle(ref Player player, ref AnimatedSprite animated)
     {
         if (_move.Value != Vector2.Zero)
         {
@@ -93,13 +104,10 @@ public sealed class PlayerSystem : GameSystem
             return;
         }
 
-        sprite.Sprite = _idleSprite;
-        sprite.FlipHorizontal = player.Direction.IsAnimationFlipped();
-        animated.AnimationIndex = _idleSprite.GetAnimationIndex(player.Direction.GetAnimationName());
-        animated.Loop = true;
+        animated.Sprite = _idleSprite;
     }
 
-    private void UpdateMove(ref Player player, ref SpriteRenderer sprite, ref AnimatedSprite animated, Time time)
+    private void UpdateMove(ref Player player, ref Transform transform, ref AnimatedSprite animated, Time time)
     {
         if (_move.Value == Vector2.Zero)
         {
@@ -108,12 +116,8 @@ public sealed class PlayerSystem : GameSystem
         }
 
         player.Direction = _move.Value.ToFaceDirection();
-        sprite.Sprite = _moveSprite;
-        sprite.Position += player.Direction.ToVector2() * 100f * time.Delta;
-        sprite.FlipHorizontal = player.Direction.IsAnimationFlipped();
-
-        animated.AnimationIndex = _moveSprite.GetAnimationIndex(player.Direction.GetAnimationName());
-        animated.Loop = true;
+        transform.Position += player.Direction.ToVector2() * 100f * time.Delta;
+        animated.Sprite = _moveSprite;
     }
 
     public override void Shutdown()
