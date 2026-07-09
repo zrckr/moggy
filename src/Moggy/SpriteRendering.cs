@@ -8,7 +8,7 @@ namespace Moggy;
 
 public struct SpriteRenderer()
 {
-    public AssetId SpriteId;
+    public AssetId Sprite = AssetId.Invalid;
     public int FrameIndex;
     public Vector2 Position;
     public Vector2? ForceOrigin;
@@ -64,7 +64,7 @@ public sealed class SpriteRendering : GameSystem
         foreach (var entity in _sprites)
         {
             ref var renderer = ref Registry.Get<SpriteRenderer>(entity);
-            if (!Assets.TryGet<Sprite>(renderer.SpriteId, out var sprite))
+            if (!Assets.TryGet<Sprite>(renderer.Sprite, out var sprite))
             {
                 continue;
             }

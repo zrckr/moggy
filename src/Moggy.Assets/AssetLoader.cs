@@ -1,4 +1,4 @@
-﻿using Foster.Framework;
+using Foster.Framework;
 
 namespace Moggy.Assets;
 
@@ -14,7 +14,9 @@ public class AssetLoader : IDisposable
 
     private readonly List<Type> _types = new();
 
-    private readonly Dictionary<AssetId, AssetResource> _assets = new();
+    private readonly List<Entry> _entries = new();
+
+    private ulong _nextId = 1;
 
     public AssetLoader(App app)
     {
@@ -25,7 +27,7 @@ public class AssetLoader : IDisposable
         var assembly = typeof(App).Assembly;
         var stream = assembly.GetManifestResourceStream(Bundle)
             ?? throw new FileNotFoundException($"Embedded content resource not found: {Bundle}!");
-        _provider = new ZipAssetProvider();
+        _provider = new ZipProvider(stream);
 #endif
     }
 
@@ -40,13 +42,15 @@ public class AssetLoader : IDisposable
         _types.Add(type);
     }
 
-    public AssetId Load<T>(string path, out T? asset) where T : AssetResource, new()
+    public T Load<T>(string path) where T : AssetResource, new()
     {
-        var id = new AssetId((ulong)path.GetHashCode());
-        if (_assets.TryGetValue(id, out var existingAsset))
+        PruneCollected();
+
+        if (TryFind(path, out var entry) &&
+            entry.Asset.TryGetTarget(out var existingAsset) &&
+            existingAsset is T { IsDisposing: false } typedAsset)
         {
-            asset = existingAsset as T;
-            return id;
+            return typedAsset;
         }
 
         if (_types.All(type => type != typeof(T)))
@@ -55,57 +59,113 @@ public class AssetLoader : IDisposable
         }
 
         using var stream = _provider.LoadStream(path);
-        asset = new T();
-        asset.Name = path;
+        var id = NextId();
+        var asset = new T
+        {
+            Id = id,
+            Name = path
+        };
         asset.Load(_app, stream);
-        _assets.Add(id, asset);
-        return id;
-    }
 
-    public bool Unload(AssetId id)
-    {
-        if (_assets.Remove(id, out var asset))
+        _entries.Add(new Entry
         {
-            asset.Dispose();
-            return true;
-        }
+            Path = path,
+            Id = id,
+            Asset = new WeakReference<AssetResource>(asset)
+        });
 
-        return false;
-    }
-
-    public T Get<T>(AssetId id) where T : AssetResource
-    {
-        if (!_assets.TryGetValue(id, out var asset))
-        {
-            throw new KeyNotFoundException($"Asset '{id.Id}' is not loaded.");
-        }
-
-        if (asset is not T typed)
-        {
-            throw new InvalidCastException(
-                $"Asset '{id.Id}' is '{asset.GetType().Name}', not '{typeof(T).Name}'.");
-        }
-
-        return typed;
+        return asset;
     }
 
     public bool TryGet<T>(AssetId id, out T? asset) where T : AssetResource
     {
-        var exists = _assets.TryGetValue(id, out var existingAsset);
-        asset = existingAsset as T;
-        return exists;
+        PruneCollected();
+
+        if (TryFind(id, out var entry) &&
+            entry.Asset.TryGetTarget(out var existingAsset) &&
+            existingAsset is T { IsDisposing: false } typed)
+        {
+            asset = typed;
+            return true;
+        }
+
+        asset = null;
+        return false;
     }
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        foreach (var asset in _assets.Values)
+        foreach (var entry in _entries.ToArray())
         {
-            asset.Dispose();
+            if (entry.Asset.TryGetTarget(out var asset))
+            {
+                asset.Dispose();
+            }
         }
 
-        _assets.Clear();
+        _entries.Clear();
         _types.Clear();
         _provider.Dispose();
+    }
+
+    private AssetId NextId()
+    {
+        if (_nextId == 0)
+        {
+            throw new InvalidOperationException("Asset id space exhausted.");
+        }
+
+        return new AssetId(_nextId++);
+    }
+
+    private bool TryFind(string path, out Entry entry)
+    {
+        foreach (var asset in _entries)
+        {
+            if (string.Equals(asset.Path, path, StringComparison.OrdinalIgnoreCase))
+            {
+                entry = asset;
+                return true;
+            }
+        }
+
+        entry = null!;
+        return false;
+    }
+
+    private bool TryFind(AssetId id, out Entry entry)
+    {
+        foreach (var asset in _entries)
+        {
+            if (asset.Id == id)
+            {
+                entry = asset;
+                return true;
+            }
+        }
+
+        entry = null!;
+        return false;
+    }
+
+    private void PruneCollected()
+    {
+        for (var i = _entries.Count - 1; i >= 0; i--)
+        {
+            if (!_entries[i].Asset.TryGetTarget(out var asset) || asset.IsDisposing)
+            {
+                _entries.RemoveAt(i);
+            }
+        }
+    }
+
+    private sealed class Entry
+    {
+        public required string Path { get; init; }
+
+        public required AssetId Id { get; init; }
+
+        public required WeakReference<AssetResource> Asset { get; init; }
     }
 }

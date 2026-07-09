@@ -90,6 +90,11 @@ public sealed class Sprite : AssetResource
 
     public override void Dispose()
     {
+        if (IsDisposing)
+        {
+            return;
+        }
+
         base.Dispose();
         _texture.Dispose();
     }

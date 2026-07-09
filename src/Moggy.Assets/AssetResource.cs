@@ -1,15 +1,31 @@
-﻿using Foster.Framework;
+using Foster.Framework;
 
 namespace Moggy.Assets;
 
 public abstract class AssetResource : IDisposable
 {
-    public string Name { get; internal set; } = "";
+    public AssetId Id { get; internal init; } = AssetId.Invalid;
+
+    public string Name { get; internal init; } = "";
+
+    public bool IsDisposing { get; private set; }
+
+    public event Action? Disposed;
 
     public abstract void Load(App app, Stream stream);
 
     public virtual void Dispose()
     {
-        GC.SuppressFinalize(this);
+        if (!IsDisposing)
+        {
+            IsDisposing = true;
+            GC.SuppressFinalize(this);
+            Disposed?.Invoke();
+        }
+    }
+
+    public static implicit operator AssetId(AssetResource resource)
+    {
+        return resource.Id;
     }
 }

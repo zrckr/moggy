@@ -35,30 +35,27 @@ public sealed class PlayerSystem : GameSystem
 {
     private Query _player = null!;
 
-    private VirtualDevice _device = null!;
+    private VirtualDevice _inputDevice = null!;
 
     private VirtualStick _move = null!;
 
-    private AssetId _idleAsset;
+    private Sprite _idleSprite = null!;
 
-    private AssetId _moveAsset;
-
-    private AssetId _hurtAsset;
+    private Sprite _moveSprite = null!;
 
     public override void Startup()
     {
-        _idleAsset = Assets.Load<Sprite>("Player/Idle", out _);
-        _moveAsset = Assets.Load<Sprite>("Player/Move", out _);
-        _hurtAsset = Assets.Load<Sprite>("Player/Hurt", out _);
+        _idleSprite = Assets.Load<Sprite>("Player/Idle");
+        _moveSprite = Assets.Load<Sprite>("Player/Move");
 
         var player = Registry.Create();
         Registry.Set(player, new Player());
         Registry.Set(player, new SpriteRenderer { Position = Vector2.Zero, PixelSize = 2 });
         Registry.Set(player, new AnimatedSprite());
 
-        _device = new VirtualDevice(App.Input, "Player");
-        _device.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
-        _move = _device.AddStick("Move",
+        _inputDevice = new VirtualDevice(App.Input, "Player");
+        _inputDevice.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
+        _move = _inputDevice.AddStick("Move",
             new StickBindingSet()
                 .AddArrowKeys());
 
@@ -96,11 +93,9 @@ public sealed class PlayerSystem : GameSystem
             return;
         }
 
-        sprite.SpriteId = _idleAsset;
+        sprite.Sprite = _idleSprite;
         sprite.FlipHorizontal = player.Direction.IsAnimationFlipped();
-
-        var idleAsset = Assets.Get<Sprite>(_idleAsset);
-        animated.AnimationIndex = idleAsset.GetAnimationIndex(player.Direction.GetAnimationName());
+        animated.AnimationIndex = _idleSprite.GetAnimationIndex(player.Direction.GetAnimationName());
         animated.Loop = true;
     }
 
@@ -113,20 +108,18 @@ public sealed class PlayerSystem : GameSystem
         }
 
         player.Direction = _move.Value.ToFaceDirection();
-        sprite.SpriteId = _moveAsset;
+        sprite.Sprite = _moveSprite;
         sprite.Position += player.Direction.ToVector2() * 100f * time.Delta;
         sprite.FlipHorizontal = player.Direction.IsAnimationFlipped();
 
-        var moveAsset = Assets.Get<Sprite>(_moveAsset);
-        animated.AnimationIndex = moveAsset.GetAnimationIndex(player.Direction.GetAnimationName());
+        animated.AnimationIndex = _moveSprite.GetAnimationIndex(player.Direction.GetAnimationName());
         animated.Loop = true;
     }
 
     public override void Shutdown()
     {
-        _device.Dispose();
-        Assets.Unload(_hurtAsset);
-        Assets.Unload(_moveAsset);
-        Assets.Unload(_idleAsset);
+        _inputDevice.Dispose();
+        _moveSprite.Dispose();
+        _idleSprite.Dispose();
     }
 }

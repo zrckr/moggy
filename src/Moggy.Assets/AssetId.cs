@@ -2,24 +2,12 @@ namespace Moggy.Assets;
 
 public readonly record struct AssetId(ulong Id)
 {
+    public static AssetId Invalid => default;
+
+    public bool IsValid => Id != 0;
+
     public override string ToString()
     {
-        if (Id == 0)
-        {
-            return "0";
-        }
-
-        Span<char> buffer = stackalloc char[13];
-        var value = Id;
-        var index = buffer.Length;
-
-        const string alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
-        while (value > 0)
-        {
-            buffer[--index] = alphabet[(int)(value % (ulong)alphabet.Length)];
-            value /= (ulong)alphabet.Length;
-        }
-
-        return buffer[index..].ToString();
+        return $"{{{Id}}}";
     }
 }
