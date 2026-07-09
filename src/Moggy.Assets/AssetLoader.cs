@@ -44,37 +44,12 @@ public class AssetLoader : IDisposable
 
     public T Load<T>(string path) where T : AssetResource, new()
     {
-        PruneCollected();
+        return Load<T>(path, requireRegistration: true, normalizePath: null);
+    }
 
-        if (TryFind(path, out var entry) &&
-            entry.Asset.TryGetTarget(out var existingAsset) &&
-            existingAsset is T { IsDisposing: false } typedAsset)
-        {
-            return typedAsset;
-        }
-
-        if (_types.All(type => type != typeof(T)))
-        {
-            throw new NotSupportedException($"No asset loader is registered for '{path}'.");
-        }
-
-        using var stream = _provider.LoadStream(path);
-        var id = NextId();
-        var asset = new T
-        {
-            Id = id,
-            Name = path
-        };
-        asset.Load(_app, stream);
-
-        _entries.Add(new Entry
-        {
-            Path = path,
-            Id = id,
-            Asset = new WeakReference<AssetResource>(asset)
-        });
-
-        return asset;
+    public T LoadJson<T>(string path)
+    {
+        return Load<JsonAsset<T>>(path, requireRegistration: false, normalizePath: EnsureJsonPath).Value;
     }
 
     public bool TryGet<T>(AssetId id, out T? asset) where T : AssetResource
@@ -109,6 +84,42 @@ public class AssetLoader : IDisposable
         _provider.Dispose();
     }
 
+    private T Load<T>(string path, bool requireRegistration, Func<string, string>? normalizePath) where T : AssetResource, new()
+    {
+        PruneCollected();
+        path = normalizePath?.Invoke(path) ?? path;
+
+        if (TryFind(path, out var entry) &&
+            entry.Asset.TryGetTarget(out var existingAsset) &&
+            existingAsset is T { IsDisposing: false } typedAsset)
+        {
+            return typedAsset;
+        }
+
+        if (requireRegistration && _types.All(type => type != typeof(T)))
+        {
+            throw new NotSupportedException($"No asset loader is registered for '{path}'.");
+        }
+
+        using var stream = _provider.LoadStream(path);
+        var id = NextId();
+        var asset = new T
+        {
+            Id = id,
+            Name = path
+        };
+        asset.Load(_app, stream);
+
+        _entries.Add(new Entry
+        {
+            Path = path,
+            Id = id,
+            Asset = new WeakReference<AssetResource>(asset)
+        });
+
+        return asset;
+    }
+
     private AssetId NextId()
     {
         if (_nextId == 0)
@@ -117,6 +128,13 @@ public class AssetLoader : IDisposable
         }
 
         return new AssetId(_nextId++);
+    }
+
+    private static string EnsureJsonPath(string path)
+    {
+        return Path.GetExtension(path).Equals(".json", StringComparison.OrdinalIgnoreCase)
+            ? path
+            : Path.ChangeExtension(path, ".json");
     }
 
     private bool TryFind(string path, out Entry entry)

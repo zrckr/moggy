@@ -1,0 +1,24 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Foster.Framework;
+
+namespace Moggy.Assets;
+
+public sealed class JsonAsset<T> : AssetResource
+{
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        Converters =
+        {
+            new JsonStringEnumConverter()
+        }
+    };
+
+    public T Value { get; private set; } = default!;
+
+    public override void Load(App app, Stream stream)
+    {
+        Value = JsonSerializer.Deserialize<T>(stream, _jsonOptions)
+            ?? throw new InvalidOperationException($"JSON asset '{Name}' could not be deserialized.");
+    }
+}

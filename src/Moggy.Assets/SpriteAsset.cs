@@ -2,7 +2,7 @@
 
 namespace Moggy.Assets;
 
-public sealed class Sprite : AssetResource
+public sealed class SpriteAsset : AssetResource
 {
     public IReadOnlyList<Frame> Frames => _frames;
 

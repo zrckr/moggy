@@ -64,7 +64,7 @@ public class Game : App
         #region Loaders
 
         _assets = new AssetLoader(this);
-        _assets.Register<Sprite>();
+        _assets.Register<SpriteAsset>();
 
         #endregion
 

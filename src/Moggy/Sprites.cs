@@ -132,7 +132,7 @@ public sealed class SpriteRendering : GameSystem
 
     private void RenderStaticSprite(in Transform transform, in StaticSprite renderer)
     {
-        if (Assets.TryGet<Sprite>(renderer.Sprite, out var sprite) && sprite is not null && sprite.Frames.Count != 0)
+        if (Assets.TryGet<SpriteAsset>(renderer.Sprite, out var sprite) && sprite is not null && sprite.Frames.Count != 0)
         {
             RenderFrame(sprite.Frames[0], transform, renderer.Offset, renderer.FlipHorizontal, renderer.FlipVertical);
         }
@@ -153,10 +153,10 @@ public sealed class SpriteRendering : GameSystem
     private bool TryGetAnimation(
         Entity entity,
         in AnimatedSprite renderer,
-        out Sprite sprite,
-        out Sprite.Animation animation)
+        out SpriteAsset sprite,
+        out SpriteAsset.Animation animation)
     {
-        if (!Assets.TryGet<Sprite>(renderer.Sprite, out var resolvedSprite) || resolvedSprite is null)
+        if (!Assets.TryGet<SpriteAsset>(renderer.Sprite, out var resolvedSprite) || resolvedSprite is null)
         {
             sprite = null!;
             animation = default;
@@ -179,7 +179,7 @@ public sealed class SpriteRendering : GameSystem
         return true;
     }
 
-    private void RenderFrame(Sprite.Frame frame, in Transform transform, Vector2 offset, bool flipH, bool flipV)
+    private void RenderFrame(SpriteAsset.Frame frame, in Transform transform, Vector2 offset, bool flipH, bool flipV)
     {
         var origin = frame.Subtexture.Size * 0.5f;
         var scale = transform.Scale;

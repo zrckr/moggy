@@ -39,14 +39,14 @@ public sealed class PlayerSystem : GameSystem
 
     private VirtualStick _move = null!;
 
-    private Sprite _idleSprite = null!;
+    private SpriteAsset _idleSprite = null!;
 
-    private Sprite _moveSprite = null!;
+    private SpriteAsset _moveSprite = null!;
 
     public override void Startup()
     {
-        _idleSprite = Assets.Load<Sprite>("Player/Idle");
-        _moveSprite = Assets.Load<Sprite>("Player/Move");
+        _idleSprite = Assets.Load<SpriteAsset>("Player/Idle");
+        _moveSprite = Assets.Load<SpriteAsset>("Player/Move");
 
         var player = Registry.Create();
         Registry.Set(player, new Player());
