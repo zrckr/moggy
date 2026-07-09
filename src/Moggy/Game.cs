@@ -1,4 +1,5 @@
 ﻿using Foster.Framework;
+using System.Numerics;
 using Moggy.Assets;
 using Moggy.Ecs;
 
@@ -6,11 +7,19 @@ namespace Moggy;
 
 public class Game : App
 {
+    private const int VirtualWidth = 240;
+
+    private const int VirtualHeight = 320;
+
     private readonly List<GameSystem> _systems = new();
 
     private readonly Registry _registry = new();
 
     private AssetLoader _assets = null!;
+
+    private Entity _view = Entity.Invalid;
+
+    private Target _screen = null!;
 
     private Batcher _batcher = null!;
 
@@ -46,6 +55,10 @@ public class Game : App
 
     protected override void Startup()
     {
+        _view = _registry.Create();
+        _registry.Set(_view, new Viewport(VirtualWidth, VirtualHeight));
+        _registry.Set(_view, new Camera(Vector2.Zero));
+        _screen = new Target(GraphicsDevice, VirtualWidth, VirtualHeight, "GameScreen");
         _batcher = new Batcher(GraphicsDevice);
 
         #region Loaders
@@ -57,8 +70,10 @@ public class Game : App
 
         #region Systems
 
-        RegisterSystem<PlayerSystem>();
-        RegisterSystem<SpriteSystem>();
+        RegisterSystem<ViewportSystem>();
+        RegisterSystem<CameraSystem>();
+        RegisterSystem<Player>();
+        RegisterSystem<SpriteRendering>();
 
         #endregion
     }
@@ -73,15 +88,28 @@ public class Game : App
 
     protected override void Render()
     {
-        Window.Clear(Color.Black);
+        ref var viewport = ref _registry.Get<Viewport>(_view);
+        ref var camera = ref _registry.Get<Camera>(_view);
+
+        _screen.Clear(Color.Black);
+        _batcher.PushMatrix(camera.WorldToVirtual);
         foreach (var system in _systems)
         {
             system.Render(Time);
         }
+        _batcher.PopMatrix();
+
+        _batcher.Render(_screen);
+        _batcher.Clear();
+
+        Window.Clear(new Color(0.2f, 0.2f, 0.294f, 1f));
+
+        _batcher.PushSampler(new TextureSampler(TextureFilter.Nearest, TextureWrap.Clamp, TextureWrap.Clamp));
+        _batcher.Image(_screen, viewport.Center, viewport.Origin, Vector2.One * viewport.Scale, 0, Color.White);
+        _batcher.PopSampler();
 
         _batcher.Render(Window);
         _batcher.Clear();
-        _assets.Check();
     }
 
     protected override void Shutdown()
@@ -93,6 +121,7 @@ public class Game : App
 
         _systems.Clear();
         _assets.Dispose();
+        _screen.Dispose();
         _batcher.Dispose();
     }
 

@@ -30,6 +30,10 @@
     <ProjectReference Include="..\Moggy.Ecs\Moggy.Ecs.csproj"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Core\" />
+  </ItemGroup>
+
   <Import Project="..\..\build\BundleContent.targets"/>
 
 </Project>

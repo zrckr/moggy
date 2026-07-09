@@ -6,13 +6,13 @@ using Serilog;
 
 namespace Moggy;
 
-public struct SpriteRenderer
+public struct SpriteRenderer()
 {
     public AssetId SpriteId;
     public int FrameIndex;
     public Vector2 Position;
-    public Vector2 Origin;
-    public float PixelSize;
+    public Vector2? ForceOrigin;
+    public int PixelSize = 1;
 }
 
 public struct AnimatedSprite
@@ -22,9 +22,9 @@ public struct AnimatedSprite
     public bool Loop;
 }
 
-public sealed class SpriteSystem : GameSystem
+public sealed class SpriteRendering : GameSystem
 {
-    private static readonly ILogger Logger = Serilog.Log.ForContext<SpriteSystem>();
+    private static readonly ILogger Logger = Serilog.Log.ForContext<SpriteRendering>();
 
     private Query _animatedSprites = null!;
 
@@ -72,6 +72,7 @@ public sealed class SpriteSystem : GameSystem
                 ref var animation = ref Registry.Get<AnimatedSprite>(entity);
                 var animationIndex = Math.Clamp(animation.AnimationIndex, 0, sprite!.Animations.Count - 1);
                 frame = sprite.GetFrameAt(sprite.Animations[animationIndex], animation.Time, animation.Loop);
+
             }
             else
             {
@@ -79,8 +80,9 @@ public sealed class SpriteSystem : GameSystem
                 frame = sprite.Frames[frameIndex];
             }
 
+            var origin = renderer.ForceOrigin ?? sprite.Frames[0].Subtexture.Size * 0.5f;
             var scale = Vector2.One * Math.Max(1, renderer.PixelSize);
-            Batcher.Image(frame.Subtexture, renderer.Position, renderer.Origin, scale, 0, Color.White);
+            Batcher.Image(frame.Subtexture, renderer.Position, origin, scale, 0, Color.White);
         }
     }
 }

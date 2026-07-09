@@ -4,8 +4,6 @@ namespace Moggy.Assets;
 
 public class AssetLoader : IDisposable
 {
-    private const int UnloadAfterIdleFrames = 300;
-
     private const string Root = "Content";
 
     private const string Bundle = "ContentBundle";
@@ -17,10 +15,6 @@ public class AssetLoader : IDisposable
     private readonly List<Type> _types = new();
 
     private readonly Dictionary<AssetId, AssetResource> _assets = new();
-
-    private readonly Dictionary<AssetId, ulong> _lastTouched = new();
-
-    private ulong _frame;
 
     public AssetLoader(App app)
     {
@@ -48,10 +42,9 @@ public class AssetLoader : IDisposable
 
     public AssetId Load<T>(string path, out T? asset) where T : AssetResource, new()
     {
-        var id = new AssetId(Fnv1A64(path));
+        var id = new AssetId((ulong)path.GetHashCode());
         if (_assets.TryGetValue(id, out var existingAsset))
         {
-            _lastTouched[id] = _frame;
             asset = existingAsset as T;
             return id;
         }
@@ -66,25 +59,18 @@ public class AssetLoader : IDisposable
         asset.Name = path;
         asset.Load(_app, stream);
         _assets.Add(id, asset);
-        _lastTouched[id] = _frame;
         return id;
     }
 
-    public void Check()
+    public bool Unload(AssetId id)
     {
-        _frame++;
-        foreach (var (id, asset) in _assets.ToArray())
+        if (_assets.Remove(id, out var asset))
         {
-            if (_lastTouched.TryGetValue(id, out var lastTouched) &&
-                _frame - lastTouched <= UnloadAfterIdleFrames)
-            {
-                continue;
-            }
-
-            _assets.Remove(id);
-            _lastTouched.Remove(id);
             asset.Dispose();
+            return true;
         }
+
+        return false;
     }
 
     public T Get<T>(AssetId id) where T : AssetResource
@@ -119,26 +105,7 @@ public class AssetLoader : IDisposable
         }
 
         _assets.Clear();
-        _lastTouched.Clear();
         _types.Clear();
         _provider.Dispose();
-    }
-
-    private static ulong Fnv1A64(string value)
-    {
-        const ulong offset = 0xCBF29CE484222325UL;
-        const ulong prime = 0x00000100000001B3UL;
-
-        var hash = offset;
-        foreach (var character in value)
-        {
-            unchecked
-            {
-                hash ^= character;
-                hash *= prime;
-            }
-        }
-
-        return hash;
     }
 }
