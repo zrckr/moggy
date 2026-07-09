@@ -1,4 +1,4 @@
-﻿namespace Moggy.Ecs;
+namespace Moggy.Ecs;
 
 /// <summary>
 /// Owns entities, component storage, and query creation.
@@ -70,7 +70,7 @@ public sealed class Registry
     /// <summary>
     /// Returns whether the entity has a component of type <typeparamref name="T"/>.
     /// </summary>
-    public bool Has<T>(Entity entity) where T : unmanaged
+    public bool Has<T>(Entity entity) where T : struct
     {
         return IsAlive(entity) && GetOrCreateStorage<T>().Contains(entity);
     }
@@ -78,7 +78,7 @@ public sealed class Registry
     /// <summary>
     /// Returns a reference to the entity's component of type <typeparamref name="T"/>.
     /// </summary>
-    public ref T Get<T>(Entity entity) where T : unmanaged
+    public ref T Get<T>(Entity entity) where T : struct
     {
         EnsureAlive(entity);
         if (IsTag<T>())
@@ -93,7 +93,7 @@ public sealed class Registry
     /// <summary>
     /// Adds or replaces a component of type <typeparamref name="T"/> on an entity.
     /// </summary>
-    public void Set<T>(Entity entity, in T component) where T : unmanaged
+    public void Set<T>(Entity entity, in T component) where T : struct
     {
         EnsureAlive(entity);
         if (IsTag<T>())
@@ -117,7 +117,7 @@ public sealed class Registry
     /// <summary>
     /// Removes a component of type <typeparamref name="T"/> from an entity.
     /// </summary>
-    public bool Remove<T>(Entity entity) where T : unmanaged
+    public bool Remove<T>(Entity entity) where T : struct
     {
         if (!IsAlive(entity))
         {
@@ -157,7 +157,7 @@ public sealed class Registry
         return new Query(this, candidates, included, excluded);
     }
 
-    internal IComponentStorage GetOrCreateStorage<T>() where T : unmanaged
+    internal IComponentStorage GetOrCreateStorage<T>() where T : struct
     {
         var type = typeof(T);
         if (!_storages.TryGetValue(type, out var storage))
@@ -180,7 +180,7 @@ public sealed class Registry
         }
     }
 
-    private static bool IsTag<T>() where T : unmanaged
+    private static bool IsTag<T>() where T : struct
     {
         return typeof(ITag).IsAssignableFrom(typeof(T));
     }

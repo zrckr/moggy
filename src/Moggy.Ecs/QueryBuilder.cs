@@ -1,4 +1,4 @@
-﻿namespace Moggy.Ecs;
+namespace Moggy.Ecs;
 
 /// <summary>
 /// Builds entity query from included and excluded component types.
@@ -21,7 +21,7 @@ public sealed class QueryBuilder
     /// <summary>
     /// Requires entities to have a component of type <typeparamref name="T"/>.
     /// </summary>
-    public QueryBuilder Include<T>() where T : unmanaged
+    public QueryBuilder Include<T>() where T : struct
     {
         EnsureNotBuilt();
 
@@ -42,7 +42,7 @@ public sealed class QueryBuilder
     /// <summary>
     /// Rejects entities that have a component of type <typeparamref name="T"/>.
     /// </summary>
-    public QueryBuilder Exclude<T>() where T : unmanaged
+    public QueryBuilder Exclude<T>() where T : struct
     {
         EnsureNotBuilt();
 

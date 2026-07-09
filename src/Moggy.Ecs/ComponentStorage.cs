@@ -1,11 +1,11 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace Moggy.Ecs;
 
 /// <summary>
 /// Stores component values for one component type.
 /// </summary>
-internal sealed class ComponentStorage<T> : IComponentStorage where T : unmanaged
+internal sealed class ComponentStorage<T> : IComponentStorage where T : struct
 {
     public Type ComponentType => typeof(T);
 

@@ -1,9 +1,9 @@
-﻿namespace Moggy.Ecs;
+namespace Moggy.Ecs;
 
 /// <summary>
 /// Stores entity membership for a tag component type.
 /// </summary>
-internal sealed class TagStorage<T> : IComponentStorage where T : unmanaged
+internal sealed class TagStorage<T> : IComponentStorage where T : struct
 {
     public Type ComponentType => typeof(T);
 

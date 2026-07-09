@@ -1,9 +1,9 @@
-﻿namespace Moggy.Ecs;
+namespace Moggy.Ecs;
 
 /// <summary>
 /// Couples an entity with its component value.
 /// </summary>
-internal struct ComponentEntity<T> where T : unmanaged
+internal struct ComponentEntity<T> where T : struct
 {
     public Entity Entity;
 
