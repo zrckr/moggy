@@ -24,7 +24,7 @@ public class AssetLoader : IDisposable
 #if DEBUG
         _provider = new DirectoryProvider(Root);
 #else
-        var assembly = typeof(App).Assembly;
+        var assembly = app.GetType().Assembly;
         var stream = assembly.GetManifestResourceStream(Bundle)
             ?? throw new FileNotFoundException($"Embedded content resource not found: {Bundle}!");
         _provider = new ZipProvider(stream);

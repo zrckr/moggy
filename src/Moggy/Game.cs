@@ -2,11 +2,14 @@
 using System.Numerics;
 using Moggy.Assets;
 using Moggy.Ecs;
+using Serilog;
 
 namespace Moggy;
 
 public class Game : App
 {
+    private static readonly ILogger Logger = Serilog.Log.ForContext<Game>();
+
     private const int VirtualWidth = 240;
 
     private const int VirtualHeight = 320;
@@ -36,7 +39,7 @@ public class Game : App
         }
         catch (Exception exception)
         {
-            Serilog.Log.Fatal(exception, "Application terminated unexpectedly");
+            Logger.Fatal(exception, "Application terminated unexpectedly");
         }
         finally
         {
@@ -45,7 +48,7 @@ public class Game : App
                 game.Dispose();
             }
 
-            Log.SetCallbacks(null, null, null);
+            Foster.Framework.Log.SetCallbacks(null, null, null);
             Serilog.Log.CloseAndFlush();
         }
     }

@@ -16,10 +16,16 @@ public sealed class ZipProvider : AssetProvider
         var normalizedPath = NormalizePath(path);
         foreach (var entry in _archive.Entries)
         {
-            if (NormalizePath(entry.FullName).StartsWith(normalizedPath, StringComparison.OrdinalIgnoreCase))
+            if (!NormalizePath(entry.FullName).Equals(normalizedPath, StringComparison.OrdinalIgnoreCase))
             {
-                return entry.Open();
+                continue;
             }
+
+            var stream = new MemoryStream();
+            using var entryStream = entry.Open();
+            entryStream.CopyTo(stream);
+            stream.Position = 0;
+            return stream;
         }
 
         throw new FileNotFoundException($"Asset at '{path}' was not found.", path);
