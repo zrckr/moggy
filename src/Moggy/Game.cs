@@ -19,6 +19,8 @@ public class Game : App
 
     private Entity _view = Entity.Invalid;
 
+    private Entity _grid = Entity.Invalid;
+
     private Target _screen = null!;
 
     private Batcher _batcher = null!;
@@ -26,9 +28,10 @@ public class Game : App
     public static void Main()
     {
         Logging.Initialize();
+        Game? game = null;
         try
         {
-            using var game = new Game();
+            game = new Game();
             game.Run();
         }
         catch (Exception exception)
@@ -37,6 +40,11 @@ public class Game : App
         }
         finally
         {
+            if (game is { Running: false, Disposed: false })
+            {
+                game.Dispose();
+            }
+
             Log.SetCallbacks(null, null, null);
             Serilog.Log.CloseAndFlush();
         }
@@ -61,21 +69,15 @@ public class Game : App
         _screen = new Target(GraphicsDevice, VirtualWidth, VirtualHeight, "GameScreen");
         _batcher = new Batcher(GraphicsDevice);
 
-        #region Loaders
+        _grid = _registry.Create();
+        _registry.Set(_grid, new Grid(VirtualWidth, VirtualHeight, 16, 16));
 
         _assets = new AssetLoader(this);
-        _assets.Register<SpriteAsset>();
-
-        #endregion
-
-        #region Systems
-
         RegisterSystem<ViewportSystem>();
         RegisterSystem<CameraSystem>();
+        RegisterSystem<GridSystem>();
         RegisterSystem<PlayerSystem>();
         RegisterSystem<SpriteRendering>();
-
-        #endregion
     }
 
     protected override void Update()

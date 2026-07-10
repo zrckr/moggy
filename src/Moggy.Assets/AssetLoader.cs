@@ -29,17 +29,8 @@ public class AssetLoader : IDisposable
             ?? throw new FileNotFoundException($"Embedded content resource not found: {Bundle}!");
         _provider = new ZipProvider(stream);
 #endif
-    }
-
-    public void Register<T>() where T : AssetResource
-    {
-        var type = typeof(T);
-        if (_types.Contains(type))
-        {
-            throw new ArgumentException("An asset type is already registered.", type.Name);
-        }
-
-        _types.Add(type);
+        _types.Add(typeof(SpriteAsset));
+        _types.Add(typeof(ImageAsset));
     }
 
     public T Load<T>(string path) where T : AssetResource, new()

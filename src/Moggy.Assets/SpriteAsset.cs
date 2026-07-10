@@ -8,7 +8,7 @@ public sealed class SpriteAsset : AssetResource
 
     public IReadOnlyList<Animation> Animations => _animations;
 
-    private Texture _texture = null!;
+    public Texture Texture { get; private set; } = null!;
 
     private Frame[] _frames = null!;
 
@@ -46,14 +46,14 @@ public sealed class SpriteAsset : AssetResource
             throw new InvalidOperationException($"Sprite '{Name}' was too large for a single texture.");
         }
 
-        _texture = new Texture(app.GraphicsDevice, output.Pages[0], Name);
+        Texture = new Texture(app.GraphicsDevice, output.Pages[0], Name);
         output.Pages[0].Dispose();
 
         _frames = new Frame[aseprite.Frames.Length];
         foreach (var entry in output.Entries)
         {
             _frames[entry.Index] = new Frame(
-                new Subtexture(_texture, entry.Source, entry.Frame),
+                new Subtexture(Texture, entry.Source, entry.Frame),
                 TimeSpan.FromMilliseconds(aseprite.Frames[entry.Index].Duration));
         }
 
@@ -96,7 +96,7 @@ public sealed class SpriteAsset : AssetResource
         }
 
         base.Dispose();
-        _texture.Dispose();
+        Texture.Dispose();
     }
 
     public Frame GetFrameAt(in Animation animation, TimeSpan time, bool loop)

@@ -33,6 +33,8 @@ public struct Player()
 
 public sealed class PlayerSystem : GameSystem
 {
+    private const float MovementSpeed = 100f;
+
     private Query _player = null!;
 
     private VirtualDevice _inputDevice = null!;
@@ -52,7 +54,7 @@ public sealed class PlayerSystem : GameSystem
         Registry.Set(player, new Player());
         Registry.Set(player, new Transform
         {
-            Position = Vector2.Zero,
+            Position = new Vector2(0, 8),
             Scale = new Vector2(2f)
         });
         Registry.Set(player, new AnimatedSprite
@@ -116,7 +118,7 @@ public sealed class PlayerSystem : GameSystem
         }
 
         player.Direction = _move.Value.ToFaceDirection();
-        transform.Position += player.Direction.ToVector2() * 100f * time.Delta;
+        transform.Position += player.Direction.ToVector2() * MovementSpeed * time.Delta;
         animated.Sprite = _moveSprite;
     }
 
