@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Foster.Framework;
 
 namespace Moggy;
 
@@ -24,13 +25,25 @@ public static class FaceDirectionExtensions
         };
     }
 
-    public static FaceDirection ToFaceDirection(this Vector2 vector)
+    public static Point2 ToPoint2(this FaceDirection faceDirection)
+    {
+        return faceDirection switch
+        {
+            FaceDirection.Up => new Point2(0, -1),
+            FaceDirection.Right => new Point2(1, 0),
+            FaceDirection.Down => new Point2(0, 1),
+            FaceDirection.Left => new Point2(-1, 0),
+            _ => throw new ArgumentOutOfRangeException(nameof(faceDirection), faceDirection, null)
+        };
+    }
+
+    public static FaceDirection? ToFaceDirection(this Vector2 vector)
     {
         if (vector.X < 0f) return FaceDirection.Left;
         if (vector.X > 0f) return FaceDirection.Right;
         if (vector.Y < 0f) return FaceDirection.Up;
         if (vector.Y > 0f) return FaceDirection.Down;
-        throw new ArgumentOutOfRangeException(nameof(vector), vector, null);
+        return null;
     }
 
     public static string GetAnimationName(this FaceDirection faceDirection)
@@ -47,5 +60,25 @@ public static class FaceDirectionExtensions
     public static bool IsAnimationFlipped(this FaceDirection faceDirection)
     {
         return faceDirection == FaceDirection.Right;
+    }
+
+    public static bool IsAdjacent(this FaceDirection faceDirection, FaceDirection candidate)
+    {
+        return faceDirection switch
+        {
+            FaceDirection.Up or FaceDirection.Down => candidate is FaceDirection.Left or FaceDirection.Right,
+            FaceDirection.Left or FaceDirection.Right => candidate is FaceDirection.Up or FaceDirection.Down,
+            _ => throw new ArgumentOutOfRangeException(nameof(faceDirection), faceDirection, null)
+        };
+    }
+
+    public static (FaceDirection, FaceDirection) GetAdjacentDirections(this FaceDirection faceDirection)
+    {
+        return faceDirection switch
+        {
+            FaceDirection.Up or FaceDirection.Down => (FaceDirection.Left, FaceDirection.Right),
+            FaceDirection.Left or FaceDirection.Right => (FaceDirection.Up, FaceDirection.Down),
+            _ => throw new ArgumentOutOfRangeException(nameof(faceDirection), faceDirection, null)
+        };
     }
 }

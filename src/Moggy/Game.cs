@@ -77,6 +77,7 @@ public class Game : App
         RegisterSystem<CameraSystem>();
         RegisterSystem<GridSystem>();
         RegisterSystem<PlayerSystem>();
+        RegisterSystem<GridMoverSystem>();
         RegisterSystem<SpriteRendering>();
     }
 

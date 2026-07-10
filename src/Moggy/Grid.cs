@@ -5,12 +5,35 @@ using Moggy.Ecs;
 
 namespace Moggy;
 
-public struct Grid(int width, int height, int cellWidth, int cellHeight)
+public readonly struct Grid(int width, int height, int cellWidth, int cellHeight)
 {
     public readonly int Width = width;
     public readonly int Height = height;
     public readonly int CellWidth = cellWidth;
     public readonly int CellHeight = cellHeight;
+
+    public int Columns => Width / CellWidth;
+
+    public int Rows => Height / CellHeight;
+
+    public bool Contains(Point2 cell)
+    {
+        return cell is { X: >= 0, Y: >= 0 } &&
+               cell.X < Columns &&
+               cell.Y < Rows;
+    }
+
+    public Vector2 CellToWorld(Point2 cell)
+    {
+        return new Vector2(
+            -Width / 2f + cell.X * CellWidth,
+            -Height / 2f + cell.Y * CellHeight);
+    }
+
+    public Vector2 CellToCenter(Point2 cell)
+    {
+        return CellToWorld(cell) + new Vector2(CellWidth, CellHeight) * 0.5f;
+    }
 }
 
 public sealed class GridSystem : GameSystem

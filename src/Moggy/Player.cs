@@ -29,11 +29,15 @@ public struct Player()
     public PlayerState PreviousState { get; private set; } = PlayerState.Idle;
 
     public FaceDirection Direction = FaceDirection.Down;
+
+    public FaceDirection? BufferedDirection = null;
 }
 
 public sealed class PlayerSystem : GameSystem
 {
-    private const float MovementSpeed = 100f;
+    private const float CellMoveDuration = 0.15f;
+
+    private Query _grid = null!;
 
     private Query _player = null!;
 
@@ -47,14 +51,26 @@ public sealed class PlayerSystem : GameSystem
 
     public override void Startup()
     {
+        _grid = Registry.Query()
+            .Include<Grid>()
+            .Build();
+
         _idleSprite = Assets.Load<SpriteAsset>("Player/Idle");
         _moveSprite = Assets.Load<SpriteAsset>("Player/Move");
 
+        var gridEntity = _grid.Single();
+        ref var grid = ref Registry.Get<Grid>(gridEntity);
+        var startCell = new Point2(grid.Columns / 2, grid.Rows / 2);
+
         var player = Registry.Create();
         Registry.Set(player, new Player());
+        Registry.Set(player, new GridPosition
+        {
+            Cell = startCell
+        });
         Registry.Set(player, new Transform
         {
-            Position = new Vector2(0, 8),
+            Position = grid.CellToCenter(startCell),
             Scale = new Vector2(2f)
         });
         Registry.Set(player, new AnimatedSprite
@@ -71,6 +87,7 @@ public sealed class PlayerSystem : GameSystem
 
         _player = Registry.Query()
             .Include<Player>()
+            .Include<GridPosition>()
             .Include<Transform>()
             .Include<AnimatedSprite>()
             .Build();
@@ -78,48 +95,133 @@ public sealed class PlayerSystem : GameSystem
 
     public override void Update(Time time)
     {
-        var entity = _player.Single();
-        ref var player = ref Registry.Get<Player>(entity);
-        ref var transform = ref Registry.Get<Transform>(entity);
-        ref var animated = ref Registry.Get<AnimatedSprite>(entity);
+        var playerEntity = _player.Single();
+        var gridEntity = _grid.Single();
+        ref var grid = ref Registry.Get<Grid>(gridEntity);
+        ref var player = ref Registry.Get<Player>(playerEntity);
+        ref var gridPosition = ref Registry.Get<GridPosition>(playerEntity);
+        ref var animated = ref Registry.Get<AnimatedSprite>(playerEntity);
 
-        switch (player.State)
+        if (Registry.Has<GridMover>(playerEntity))
         {
-            case PlayerState.Idle:
-                UpdateIdle(ref player, ref animated);
-                break;
+            if (TryReadPressedDirection(out var pressed))
+            {
+                player.BufferedDirection = pressed;
+            }
 
-            case PlayerState.Move:
-                UpdateMove(ref player, ref transform, ref animated, time);
-                break;
+            player.State = PlayerState.Move;
+            animated.Sprite = _moveSprite;
+        }
+        else
+        {
+            player.State = PlayerState.Idle;
+
+            if (TryChooseMoveDirection(ref player, in grid, in gridPosition, out var direction) &&
+                TryStartMove(playerEntity, in grid, in gridPosition, direction))
+            {
+                player.State = PlayerState.Move;
+                animated.Sprite = _moveSprite;
+            }
+            else
+            {
+                animated.Sprite = _idleSprite;
+            }
         }
 
         animated.Animation = player.Direction.GetAnimationName();
         animated.FlipHorizontal = player.Direction.IsAnimationFlipped();
     }
 
-    private void UpdateIdle(ref Player player, ref AnimatedSprite animated)
+    private bool TryStartMove(Entity entity, in Grid grid, in GridPosition gridPosition, FaceDirection direction)
     {
-        if (_move.Value != Vector2.Zero)
+        var target = gridPosition.Cell + direction.ToPoint2();
+        if (!grid.Contains(target))
         {
-            player.State = PlayerState.Move;
-            return;
+            return false;
         }
 
-        animated.Sprite = _idleSprite;
+        Registry.Set(entity, new GridMover
+        {
+            From = gridPosition.Cell,
+            To = target,
+            Progress = 0f,
+            Speed = 1f / CellMoveDuration
+        });
+
+        return true;
     }
 
-    private void UpdateMove(ref Player player, ref Transform transform, ref AnimatedSprite animated, Time time)
+    private bool TryChooseMoveDirection(
+        ref Player player,
+        in Grid grid,
+        in GridPosition gridPosition,
+        out FaceDirection direction)
     {
-        if (_move.Value == Vector2.Zero)
+        if (!TryReadBufferedOrHeldDirection(ref player, out var requested))
         {
-            player.State = PlayerState.Idle;
-            return;
+            direction = default;
+            return false;
         }
 
-        player.Direction = _move.Value.ToFaceDirection();
-        transform.Position += player.Direction.ToVector2() * MovementSpeed * time.Delta;
-        animated.Sprite = _moveSprite;
+        player.Direction = requested;
+
+        if (!grid.Contains(gridPosition.Cell + requested.ToPoint2()))
+        {
+            direction = default;
+            return false;
+        }
+
+        direction = requested;
+        return true;
+    }
+
+    private bool TryReadBufferedOrHeldDirection(ref Player player, out FaceDirection direction)
+    {
+        if (player.BufferedDirection is { } buffered)
+        {
+            player.BufferedDirection = null;
+            direction = buffered;
+            return true;
+        }
+
+        if (_move.Value.ToFaceDirection() is { } held)
+        {
+            direction = held;
+            return true;
+        }
+
+        direction = default;
+        return false;
+    }
+
+    private bool TryReadPressedDirection(out FaceDirection direction)
+    {
+        if (_move.PressedLeft)
+        {
+            direction = FaceDirection.Left;
+            return true;
+        }
+
+        if (_move.PressedRight)
+        {
+            direction = FaceDirection.Right;
+            return true;
+        }
+
+        if (_move.PressedUp)
+        {
+            direction = FaceDirection.Up;
+            return true;
+        }
+
+        if (_move.PressedDown)
+        {
+            direction = FaceDirection.Down;
+            return true;
+        }
+
+        direction = default;
+        return false;
     }
 
     public override void Shutdown()
