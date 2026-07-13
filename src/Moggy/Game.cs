@@ -28,6 +28,8 @@ public class Game : App
 
     private Batcher _batcher = null!;
 
+    private ImGuiRenderer _imgui = null!;
+
     public static void Main()
     {
         Logging.Initialize();
@@ -71,16 +73,18 @@ public class Game : App
         _registry.Set(_view, new Camera(Vector2.Zero));
         _screen = new Target(GraphicsDevice, VirtualWidth, VirtualHeight, "GameScreen");
         _batcher = new Batcher(GraphicsDevice);
+        _imgui = new ImGuiRenderer(this);
 
         _grid = _registry.Create();
         _registry.Set(_grid, new Grid(VirtualWidth, VirtualHeight, 16, 16));
 
         _assets = new AssetLoader(this);
         RegisterSystem<ViewportSystem>();
-        RegisterSystem<CameraSystem>();
         RegisterSystem<GridSystem>();
         RegisterSystem<PlayerSystem>();
         RegisterSystem<GridMoverSystem>();
+        RegisterSystem<CameraFollowSystem>();
+        RegisterSystem<CameraSystem>();
         RegisterSystem<SpriteRendering>();
     }
 
@@ -97,6 +101,8 @@ public class Game : App
         ref var viewport = ref _registry.Get<Viewport>(_view);
         ref var camera = ref _registry.Get<Camera>(_view);
 
+        _imgui.BeginLayout();
+
         _screen.Clear(Color.Black);
         _batcher.PushMatrix(camera.WorldToVirtual);
         foreach (var system in _systems)
@@ -104,6 +110,8 @@ public class Game : App
             system.Render(Time);
         }
         _batcher.PopMatrix();
+
+        _imgui.EndLayout();
 
         _batcher.Render(_screen);
         _batcher.Clear();
@@ -116,6 +124,8 @@ public class Game : App
 
         _batcher.Render(Window);
         _batcher.Clear();
+
+        _imgui.Render();
     }
 
     protected override void Shutdown()
@@ -127,6 +137,7 @@ public class Game : App
 
         _systems.Clear();
         _assets.Dispose();
+        _imgui.Dispose();
         _screen.Dispose();
         _batcher.Dispose();
     }

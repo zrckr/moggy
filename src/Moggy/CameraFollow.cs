@@ -1,0 +1,147 @@
+using System.Numerics;
+using Foster.Framework;
+using ImGuiNET;
+using Moggy.Ecs;
+
+namespace Moggy;
+
+public struct CameraFollow
+{
+    public Entity Target;
+
+    public Vector2 DragSize;
+
+    public bool DebugShowDragRect;
+}
+
+public sealed class CameraFollowSystem : GameSystem
+{
+    private static readonly Vector2 DefaultDragSize = new(96f, 80f);
+
+    private Query _camera = null!;
+
+    private Query _grid = null!;
+
+    private Query _player = null!;
+
+    public override void Startup()
+    {
+        _camera = Registry.Query()
+            .Include<Camera>()
+            .Include<Viewport>()
+            .Build();
+
+        _grid = Registry.Query()
+            .Include<Grid>()
+            .Build();
+
+        _player = Registry.Query()
+            .Include<Player>()
+            .Include<Transform>()
+            .Build();
+
+        var camera = _camera.Single();
+        if (!Registry.Has<CameraFollow>(camera))
+        {
+            Registry.Set(camera, new CameraFollow
+            {
+                Target = _player.Single(),
+                DragSize = DefaultDragSize,
+                DebugShowDragRect = true
+            });
+        }
+    }
+
+    public override void Update(Time time)
+    {
+        var cameraEntity = _camera.Single();
+        EnsureFollowTarget(cameraEntity);
+
+        ref var camera = ref Registry.Get<Camera>(cameraEntity);
+        ref var viewport = ref Registry.Get<Viewport>(cameraEntity);
+        ref var follow = ref Registry.Get<CameraFollow>(cameraEntity);
+        ref var target = ref Registry.Get<Transform>(follow.Target);
+
+        var halfDrag = follow.DragSize / (2f * camera.Zoom);
+        var min = camera.Position - halfDrag;
+        var max = camera.Position + halfDrag;
+
+        if (target.Position.X < min.X)
+        {
+            camera.Position.X = target.Position.X + halfDrag.X;
+        }
+        else if (target.Position.X > max.X)
+        {
+            camera.Position.X = target.Position.X - halfDrag.X;
+        }
+
+        if (target.Position.Y < min.Y)
+        {
+            camera.Position.Y = target.Position.Y + halfDrag.Y;
+        }
+        else if (target.Position.Y > max.Y)
+        {
+            camera.Position.Y = target.Position.Y - halfDrag.Y;
+        }
+
+        ClampToGridBounds(ref camera, in viewport);
+    }
+
+    public override void Render(Time time)
+    {
+        var cameraEntity = _camera.Single();
+        if (!Registry.Has<CameraFollow>(cameraEntity))
+        {
+            return;
+        }
+
+        ref var follow = ref Registry.Get<CameraFollow>(cameraEntity);
+        if (!follow.DebugShowDragRect)
+        {
+            return;
+        }
+
+        ref var viewport = ref Registry.Get<Viewport>(cameraEntity);
+        var center = new Vector2(viewport.VirtualWidth, viewport.VirtualHeight) * 0.5f;
+        var min = center - follow.DragSize * 0.5f;
+        var max = center + follow.DragSize * 0.5f;
+        var screenOffset = new Vector2(viewport.Bounds.X, viewport.Bounds.Y);
+        var screenMin = screenOffset + min * viewport.Scale;
+        var screenMax = screenOffset + max * viewport.Scale;
+
+        ImGui.GetForegroundDrawList().AddRect(screenMin, screenMax, Color.Blue.ABGR);
+    }
+
+    private void EnsureFollowTarget(Entity camera)
+    {
+        ref var follow = ref Registry.Get<CameraFollow>(camera);
+        if (Registry.IsAlive(follow.Target) && Registry.Has<Transform>(follow.Target))
+        {
+            return;
+        }
+
+        follow.Target = _player.Single();
+    }
+
+    private void ClampToGridBounds(ref Camera camera, in Viewport viewport)
+    {
+        var gridEntity = _grid.Single();
+        ref var grid = ref Registry.Get<Grid>(gridEntity);
+
+        var halfVisible = new Vector2(viewport.VirtualWidth, viewport.VirtualHeight) / (2f * camera.Zoom);
+        var halfGrid = new Vector2(grid.Width, grid.Height) * 0.5f;
+
+        camera.Position.X = ClampAxis(camera.Position.X, halfVisible.X, halfGrid.X);
+        camera.Position.Y = ClampAxis(camera.Position.Y, halfVisible.Y, halfGrid.Y);
+    }
+
+    private static float ClampAxis(float position, float halfVisible, float halfGrid)
+    {
+        if (halfVisible >= halfGrid)
+        {
+            return 0f;
+        }
+
+        return Math.Clamp(position, -halfGrid + halfVisible, halfGrid - halfVisible);
+    }
+}
