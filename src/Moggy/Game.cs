@@ -80,7 +80,7 @@ public class Game : App
         _imgui = new ImGuiRenderer(this);
 
         _grid = _registry.Create();
-        _registry.Set(_grid, new Grid(VirtualWidth, VirtualHeight, 16, 16));
+        _registry.Set(_grid, new Grid(31, 31, 16, 16));
 
         _assets = new AssetLoader(this);
         RegisterSystem<ViewportSystem>();

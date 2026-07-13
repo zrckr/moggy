@@ -29,6 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Moggy.Assets\Moggy.Assets.csproj"/>
     <ProjectReference Include="..\Moggy.Ecs\Moggy.Ecs.csproj"/>
+    <ProjectReference Include="..\Moggy.Mazegen\Moggy.Mazegen.csproj"/>
   </ItemGroup>
 
   <Import Project="..\..\build\BundleContent.targets"/>

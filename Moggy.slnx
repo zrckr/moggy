@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="src/Moggy.Assets/Moggy.Assets.csproj" />
   <Project Path="src/Moggy.Ecs/Moggy.Ecs.csproj" />
+  <Project Path="src/Moggy.Mazegen/Moggy.Mazegen.csproj" />
   <Project Path="src/Moggy/Moggy.csproj" />
 </Solution>
