@@ -36,7 +36,7 @@ public sealed class CameraSystem : GameSystem
         camera.WorldToVirtual =
             Matrix3x2.CreateTranslation(-camera.Position) *
             Matrix3x2.CreateScale(camera.Zoom) *
-            Matrix3x2.CreateTranslation(viewport.VirtualWidth * 0.5f, viewport.VirtualHeight * 0.5f);
+            Matrix3x2.CreateTranslation(viewport.ContentBounds.CenterF);
 
         Matrix3x2.Invert(camera.WorldToVirtual, out var inverse);
         camera.VirtualToWorld = inverse;

@@ -10,9 +10,13 @@ public class Game : App
 {
     private static readonly ILogger Logger = Serilog.Log.ForContext<Game>();
 
+    private const int CellSize = 16;
+
     private const int VirtualWidth = 240;
 
     private const int VirtualHeight = 320;
+
+    private static readonly RectInt ViewportSize = new(0, CellSize * 2, VirtualWidth, VirtualHeight - CellSize * 4);
 
     private readonly List<GameSystem> _systems = new();
 
@@ -69,7 +73,7 @@ public class Game : App
     protected override void Startup()
     {
         _view = _registry.Create();
-        _registry.Set(_view, new Viewport(VirtualWidth, VirtualHeight));
+        _registry.Set(_view, new Viewport(VirtualWidth, VirtualHeight, ViewportSize));
         _registry.Set(_view, new Camera(Vector2.Zero));
         _screen = new Target(GraphicsDevice, VirtualWidth, VirtualHeight, "GameScreen");
         _batcher = new Batcher(GraphicsDevice);
@@ -104,12 +108,14 @@ public class Game : App
         _imgui.BeginLayout();
 
         _screen.Clear(Color.Black);
+        _batcher.PushScissor(viewport.ContentBounds);
         _batcher.PushMatrix(camera.WorldToVirtual);
         foreach (var system in _systems)
         {
             system.Render(Time);
         }
         _batcher.PopMatrix();
+        _batcher.PopScissor();
 
         _imgui.EndLayout();
 
@@ -119,7 +125,7 @@ public class Game : App
         Window.Clear(new Color(0.2f, 0.2f, 0.294f, 1f));
 
         _batcher.PushSampler(new TextureSampler(TextureFilter.Nearest, TextureWrap.Clamp, TextureWrap.Clamp));
-        _batcher.Image(_screen, viewport.Center, viewport.Origin, Vector2.One * viewport.Scale, 0, Color.White);
+        _batcher.Image(_screen, viewport.WindowBounds.CenterF, viewport.Origin, Vector2.One * viewport.Scale, 0, Color.White);
         _batcher.PopSampler();
 
         _batcher.Render(Window);

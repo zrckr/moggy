@@ -102,10 +102,10 @@ public sealed class CameraFollowSystem : GameSystem
         }
 
         ref var viewport = ref Registry.Get<Viewport>(cameraEntity);
-        var center = new Vector2(viewport.VirtualWidth, viewport.VirtualHeight) * 0.5f;
+        var center = viewport.ContentBounds.CenterF;
         var min = center - follow.DragSize * 0.5f;
         var max = center + follow.DragSize * 0.5f;
-        var screenOffset = new Vector2(viewport.Bounds.X, viewport.Bounds.Y);
+        var screenOffset = new Vector2(viewport.WindowBounds.X, viewport.WindowBounds.Y);
         var screenMin = screenOffset + min * viewport.Scale;
         var screenMax = screenOffset + max * viewport.Scale;
 
@@ -128,7 +128,7 @@ public sealed class CameraFollowSystem : GameSystem
         var gridEntity = _grid.Single();
         ref var grid = ref Registry.Get<Grid>(gridEntity);
 
-        var halfVisible = new Vector2(viewport.VirtualWidth, viewport.VirtualHeight) / (2f * camera.Zoom);
+        var halfVisible = new Vector2(viewport.ContentBounds.Width, viewport.ContentBounds.Height) / (2f * camera.Zoom);
         var halfGrid = new Vector2(grid.Width, grid.Height) * 0.5f;
 
         camera.Position.X = ClampAxis(camera.Position.X, halfVisible.X, halfGrid.X);

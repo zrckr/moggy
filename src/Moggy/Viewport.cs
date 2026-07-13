@@ -4,19 +4,19 @@ using Moggy.Ecs;
 
 namespace Moggy;
 
-public struct Viewport(int width, int height)
+public struct Viewport(int virtualWidth, int virtualHeight, RectInt contentBounds)
 {
-    public readonly int VirtualWidth = width;
+    public Vector2 Origin => new(VirtualWidth * 0.5f, VirtualHeight * 0.5f);
 
-    public readonly int VirtualHeight = height;
+    public readonly int VirtualWidth = virtualWidth;
 
-    public RectInt Bounds;
+    public readonly int VirtualHeight = virtualHeight;
+
+    public readonly RectInt ContentBounds = contentBounds;
+
+    public RectInt WindowBounds;
 
     public float Scale = 1f;
-
-    public Vector2 Center => Bounds.CenterF;
-
-    public Vector2 Origin => new(VirtualWidth * 0.5f, VirtualHeight * 0.5f);
 }
 
 public sealed class ViewportSystem : GameSystem
@@ -42,7 +42,7 @@ public sealed class ViewportSystem : GameSystem
 
         var width = (int)(viewport.VirtualWidth * viewport.Scale);
         var height = (int)(viewport.VirtualHeight * viewport.Scale);
-        viewport.Bounds = new RectInt(
+        viewport.WindowBounds = new RectInt(
             (App.Window.WidthInPixels - width) / 2,
             (App.Window.HeightInPixels - height) / 2,
             width,
