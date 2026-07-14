@@ -4,12 +4,12 @@ using Moggy.Ecs;
 
 namespace Moggy;
 
-public struct GridPosition
+public struct LevelPosition
 {
     public Point2 Cell;
 }
 
-public struct GridMover
+public struct LevelMover
 {
     public Point2 From;
     public Point2 To;
@@ -17,9 +17,9 @@ public struct GridMover
     public float Speed;
 }
 
-public sealed class GridMoverSystem : GameSystem
+public sealed class LevelMoverSystem : GameSystem
 {
-    private Query _grid = null!;
+    private Query _level = null!;
 
     private Query _movers = null!;
 
@@ -27,31 +27,31 @@ public sealed class GridMoverSystem : GameSystem
 
     public override void Startup()
     {
-        _grid = Registry.Query()
-            .Include<Grid>()
+        _level = Registry.Query()
+            .Include<Level>()
             .Build();
 
         _movers = Registry.Query()
-            .Include<GridPosition>()
-            .Include<GridMover>()
+            .Include<LevelPosition>()
+            .Include<LevelMover>()
             .Include<Transform>()
             .Build();
     }
 
     public override void Update(Time time)
     {
-        var gridEntity = _grid.Single();
-        ref var grid = ref Registry.Get<Grid>(gridEntity);
+        var levelEntity = _level.Single();
+        ref var level = ref Registry.Get<Level>(levelEntity);
 
         _completed.Clear();
         foreach (var entity in _movers)
         {
-            ref var position = ref Registry.Get<GridPosition>(entity);
-            ref var mover = ref Registry.Get<GridMover>(entity);
+            ref var position = ref Registry.Get<LevelPosition>(entity);
+            ref var mover = ref Registry.Get<LevelMover>(entity);
             ref var transform = ref Registry.Get<Transform>(entity);
 
-            var from = grid.CellToCenter(mover.From);
-            var to = grid.CellToCenter(mover.To);
+            var from = level.CellToCenter(mover.From);
+            var to = level.CellToCenter(mover.To);
 
             mover.Progress += mover.Speed * time.Delta;
             if (mover.Progress >= 1f)
@@ -67,7 +67,7 @@ public sealed class GridMoverSystem : GameSystem
 
         foreach (var entity in _completed)
         {
-            Registry.Remove<GridMover>(entity);
+            Registry.Remove<LevelMover>(entity);
         }
     }
 }

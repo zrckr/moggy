@@ -17,7 +17,7 @@ public sealed class CameraFollowSystem : GameSystem
 
     private Query _camera = null!;
 
-    private Query _grid = null!;
+    private Query _level = null!;
 
     private Query _player = null!;
 
@@ -28,8 +28,8 @@ public sealed class CameraFollowSystem : GameSystem
             .Include<Viewport>()
             .Build();
 
-        _grid = Registry.Query()
-            .Include<Grid>()
+        _level = Registry.Query()
+            .Include<Level>()
             .Build();
 
         _player = Registry.Query()
@@ -80,7 +80,7 @@ public sealed class CameraFollowSystem : GameSystem
             camera.Position.Y = target.Position.Y - halfDrag.Y;
         }
 
-        ClampToGridBounds(ref camera, in viewport);
+        ClampToLevelBounds(ref camera, in viewport);
     }
 
     private void EnsureFollowTarget(Entity camera)
@@ -94,16 +94,16 @@ public sealed class CameraFollowSystem : GameSystem
         follow.Target = _player.Single();
     }
 
-    private void ClampToGridBounds(ref Camera camera, in Viewport viewport)
+    private void ClampToLevelBounds(ref Camera camera, in Viewport viewport)
     {
-        var gridEntity = _grid.Single();
-        ref var grid = ref Registry.Get<Grid>(gridEntity);
+        var levelEntity = _level.Single();
+        ref var level = ref Registry.Get<Level>(levelEntity);
 
         var halfVisible = new Vector2(viewport.ContentBounds.Width, viewport.ContentBounds.Height) / (2f * camera.Zoom);
-        var halfGrid = new Vector2(grid.Width, grid.Height) * 0.5f;
+        var halfLevel = new Vector2(level.Width, level.Height) * 0.5f;
 
-        camera.Position.X = ClampAxis(camera.Position.X, halfVisible.X, halfGrid.X);
-        camera.Position.Y = ClampAxis(camera.Position.Y, halfVisible.Y, halfGrid.Y);
+        camera.Position.X = ClampAxis(camera.Position.X, halfVisible.X, halfLevel.X);
+        camera.Position.Y = ClampAxis(camera.Position.Y, halfVisible.Y, halfLevel.Y);
     }
 
     private static float ClampAxis(float position, float halfVisible, float halfGrid)

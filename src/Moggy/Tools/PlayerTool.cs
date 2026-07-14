@@ -1,4 +1,3 @@
-using System.Numerics;
 using Foster.Framework;
 using ImGuiNET;
 using Moggy.Ecs;
@@ -15,7 +14,7 @@ public sealed class PlayerTool : ToolSystem
     {
         _player = Registry.Query()
             .Include<Player>()
-            .Include<GridPosition>()
+            .Include<LevelPosition>()
             .Include<Transform>()
             .Include<AnimatedSprite>()
             .Build();
@@ -27,7 +26,7 @@ public sealed class PlayerTool : ToolSystem
         if (ImGui.Begin(Title, ref IsOpen, ImGuiWindowFlags.AlwaysAutoResize))
         {
             ref var player = ref Registry.Get<Player>(entity);
-            ref var gridPosition = ref Registry.Get<GridPosition>(entity);
+            ref var levelPosition = ref Registry.Get<LevelPosition>(entity);
             ref var transform = ref Registry.Get<Transform>(entity);
             ref var sprite = ref Registry.Get<AnimatedSprite>(entity);
 
@@ -38,9 +37,10 @@ public sealed class PlayerTool : ToolSystem
             ImGui.LabelText("Buffered", player.BufferedDirection?.ToString() ?? "-");
 
             ImGui.SeparatorText("Movement");
-            ImGui.LabelText("Cell", gridPosition.Cell.ToString());
+            ImGui.LabelText("Cell", levelPosition.Cell.ToString());
             ImGui.LabelText("Position", transform.Position.ToString());
             ImGui.LabelText("Scale", transform.Scale.ToString());
+            ImGui.LabelText("Moving", Registry.Has<LevelMover>(entity).ToString());
 
             ImGui.SeparatorText("Sprite");
             ImGui.LabelText("Animation", sprite.Animation);

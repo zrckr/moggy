@@ -17,7 +17,7 @@ public class Game : App
 
     private const int VirtualHeight = 320;
 
-    private static readonly RectInt ViewportSize = new(0, CellSize * 2, VirtualWidth, VirtualHeight - CellSize * 4);
+    private static readonly RectInt ViewportSize = new(0, CellSize * 2, VirtualWidth, VirtualHeight - CellSize * 3);
 
     private readonly List<GameSystem> _systems = new();
 
@@ -26,8 +26,6 @@ public class Game : App
     private AssetLoader _assets = null!;
 
     private Entity _view = Entity.Invalid;
-
-    private Entity _grid = Entity.Invalid;
 
     private Target _screen = null!;
 
@@ -82,14 +80,11 @@ public class Game : App
         _batcher = new Batcher(GraphicsDevice);
         _imgui = new ImGuiRenderer(this);
 
-        _grid = _registry.Create();
-        _registry.Set(_grid, new Grid(31, 31, 16, 16));
-
         _assets = new AssetLoader(this);
         RegisterSystem<ViewportSystem>();
-        RegisterSystem<GridSystem>();
+        RegisterSystem<LevelSystem>();
         RegisterSystem<PlayerSystem>();
-        RegisterSystem<GridMoverSystem>();
+        RegisterSystem<LevelMoverSystem>();
         RegisterSystem<CameraFollowSystem>();
         RegisterSystem<CameraSystem>();
         RegisterSystem<SpriteRendering>();
