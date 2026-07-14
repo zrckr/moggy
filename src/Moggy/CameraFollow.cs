@@ -1,6 +1,5 @@
 using System.Numerics;
 using Foster.Framework;
-using ImGuiNET;
 using Moggy.Ecs;
 
 namespace Moggy;
@@ -10,8 +9,6 @@ public struct CameraFollow
     public Entity Target;
 
     public Vector2 DragSize;
-
-    public bool DebugShowDragRect;
 }
 
 public sealed class CameraFollowSystem : GameSystem
@@ -46,8 +43,7 @@ public sealed class CameraFollowSystem : GameSystem
             Registry.Set(camera, new CameraFollow
             {
                 Target = _player.Single(),
-                DragSize = DefaultDragSize,
-                DebugShowDragRect = true
+                DragSize = DefaultDragSize
             });
         }
     }
@@ -85,31 +81,6 @@ public sealed class CameraFollowSystem : GameSystem
         }
 
         ClampToGridBounds(ref camera, in viewport);
-    }
-
-    public override void Render(Time time)
-    {
-        var cameraEntity = _camera.Single();
-        if (!Registry.Has<CameraFollow>(cameraEntity))
-        {
-            return;
-        }
-
-        ref var follow = ref Registry.Get<CameraFollow>(cameraEntity);
-        if (!follow.DebugShowDragRect)
-        {
-            return;
-        }
-
-        ref var viewport = ref Registry.Get<Viewport>(cameraEntity);
-        var center = viewport.ContentBounds.CenterF;
-        var min = center - follow.DragSize * 0.5f;
-        var max = center + follow.DragSize * 0.5f;
-        var screenOffset = new Vector2(viewport.WindowBounds.X, viewport.WindowBounds.Y);
-        var screenMin = screenOffset + min * viewport.Scale;
-        var screenMax = screenOffset + max * viewport.Scale;
-
-        ImGui.GetForegroundDrawList().AddRect(screenMin, screenMax, Color.Blue.ABGR);
     }
 
     private void EnsureFollowTarget(Entity camera)

@@ -3,7 +3,7 @@ using System.Numerics;
 using Foster.Framework;
 using ImGuiNET;
 
-namespace Moggy;
+namespace Moggy.Tools;
 
 public class ImGuiRenderer : IDisposable
 {

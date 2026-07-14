@@ -2,6 +2,7 @@
 using System.Numerics;
 using Moggy.Assets;
 using Moggy.Ecs;
+using Moggy.Tools;
 using Serilog;
 
 namespace Moggy;
@@ -33,6 +34,8 @@ public class Game : App
     private Batcher _batcher = null!;
 
     private ImGuiRenderer _imgui = null!;
+
+    private ToolsHost _tools = null!;
 
     public static void Main()
     {
@@ -90,6 +93,8 @@ public class Game : App
         RegisterSystem<CameraFollowSystem>();
         RegisterSystem<CameraSystem>();
         RegisterSystem<SpriteRendering>();
+
+        _tools = new ToolsHost(this, _registry, _assets);
     }
 
     protected override void Update()
@@ -114,9 +119,10 @@ public class Game : App
         {
             system.Render(Time);
         }
+
         _batcher.PopMatrix();
         _batcher.PopScissor();
-
+        _tools.Draw(Time);
         _imgui.EndLayout();
 
         _batcher.Render(_screen);
