@@ -20,6 +20,7 @@ public sealed class ToolsHost
         _app = app;
         _registry = registry;
         _assets = assets;
+        RegisterTool<PerformanceTool>();
         RegisterTool<PlayerTool>();
         RegisterTool<CameraTool>();
     }

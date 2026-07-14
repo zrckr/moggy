@@ -63,7 +63,7 @@ public class Game : App
     private Game() : base(new AppConfig
     {
         ApplicationName = "Moggy",
-        WindowTitle = "Moggy",
+        WindowTitle = $"Moggy ({ThisAssembly.Git.Commit})",
         Width = 1280,
         Height = 720,
         Resizable = true
