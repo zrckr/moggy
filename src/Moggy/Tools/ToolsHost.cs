@@ -23,6 +23,7 @@ public sealed class ToolsHost
         RegisterTool<PerformanceTool>();
         RegisterTool<PlayerTool>();
         RegisterTool<CameraTool>();
+        RegisterTool<GridTool>();
     }
 
     public void Draw(Time time)

@@ -14,7 +14,7 @@ public abstract class ToolSystem
 
     public bool IsOpen = false;
 
-    public virtual string Title => GetType().Name;
+    public abstract string Title { get; }
 
     public virtual void Startup()
     {
