@@ -60,10 +60,11 @@ public sealed class PlayerSystem : GameSystem
 
         var levelEntity = _level.Single();
         ref var level = ref Registry.Get<Level>(levelEntity);
-        var startCell = level.FindNearestWalkableCell(new Point2(level.Columns / 2, level.Rows / 2));
+        var startCell = level.FindNearestWalkableCell(new Cell(level.Columns / 2, level.Rows / 2));
 
         var player = Registry.Create();
         Registry.Set(player, new Player());
+        Registry.Set(player, new NavigationTarget());
         Registry.Set(player, new LevelPosition
         {
             Cell = startCell
@@ -134,7 +135,7 @@ public sealed class PlayerSystem : GameSystem
 
     private bool TryStartMove(Entity entity, in Level level, in LevelPosition levelPosition, FaceDirection direction)
     {
-        var target = levelPosition.Cell + direction.ToPoint2();
+        var target = levelPosition.Cell + direction;
         if (!level.IsWalkable(target))
         {
             return false;
@@ -164,8 +165,7 @@ public sealed class PlayerSystem : GameSystem
         }
 
         player.Direction = requested;
-
-        if (!level.IsWalkable(levelPosition.Cell + requested.ToPoint2()))
+        if (!level.IsWalkable(levelPosition.Cell + requested))
         {
             direction = default;
             return false;

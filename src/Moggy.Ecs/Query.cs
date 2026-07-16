@@ -146,6 +146,21 @@ public sealed class Query
     }
 
     /// <summary>
+    /// Collects entities into readonly collection.
+    /// </summary>
+    public IReadOnlyList<Entity> Collect()
+    {
+        var collected = new List<Entity>();
+
+        foreach (var entity in this)
+        {
+            collected.Add(entity);
+        }
+
+        return collected;
+    }
+
+    /// <summary>
     /// Iterates matching entities while the registry structure remains unchanged.
     /// </summary>
     public struct Enumerator(Query query)

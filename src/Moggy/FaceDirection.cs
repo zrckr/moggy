@@ -37,6 +37,18 @@ public static class FaceDirectionExtensions
         };
     }
 
+    public static FaceDirection Opposite(this FaceDirection faceDirection)
+    {
+        return faceDirection switch
+        {
+            FaceDirection.Up => FaceDirection.Down,
+            FaceDirection.Right => FaceDirection.Left,
+            FaceDirection.Down => FaceDirection.Up,
+            FaceDirection.Left => FaceDirection.Right,
+            _ => throw new ArgumentOutOfRangeException(nameof(faceDirection), faceDirection, null)
+        };
+    }
+
     public static FaceDirection? ToFaceDirection(this Vector2 vector)
     {
         if (vector.X < 0f) return FaceDirection.Left;

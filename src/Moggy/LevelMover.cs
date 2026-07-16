@@ -6,13 +6,13 @@ namespace Moggy;
 
 public struct LevelPosition
 {
-    public Point2 Cell;
+    public Cell Cell;
 }
 
 public struct LevelMover
 {
-    public Point2 From;
-    public Point2 To;
+    public Cell From;
+    public Cell To;
     public float Progress;
     public float Speed;
 }

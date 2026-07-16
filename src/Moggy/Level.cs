@@ -6,6 +6,15 @@ using Moggy.Mazegen;
 
 namespace Moggy;
 
+public readonly record struct Cell(int Column, int Row)
+{
+    public static Cell operator+(Cell cell, FaceDirection direction)
+    {
+        var point2 = direction.ToPoint2();
+        return new Cell(cell.Column + point2.X, cell.Row + point2.Y);
+    }
+}
+
 public struct Level
 {
     public required Maze Maze;
@@ -22,44 +31,75 @@ public struct Level
 
     public readonly int Height => Rows * CellHeight;
 
-    public readonly bool Contains(Point2 cell)
+    public readonly bool Contains(Cell cell)
     {
-        return cell is { X: >= 0, Y: >= 0 } &&
-               cell.X < Columns &&
-               cell.Y < Rows;
+        return cell is { Row: >= 0, Column: >= 0 } &&
+               cell.Column < Columns &&
+               cell.Row < Rows;
     }
 
-    public Tile GetTile(Point2 cell)
+    public readonly Tile GetTile(Cell cell)
     {
-        return Maze[cell.Y, cell.X];
+        return Maze[cell.Row, cell.Column];
     }
 
-    public bool IsWalkable(Point2 cell)
+    public readonly bool IsWalkable(Cell cell)
     {
         return Contains(cell) && GetTile(cell) is Tile.Empty or Tile.Floor;
     }
 
-    public Point2 FindNearestWalkableCell(Point2 origin)
+    public readonly bool TryRaycast(Cell origin, Cell target, out FaceDirection direction)
+    {
+        if (origin.Row == target.Row && origin.Column != target.Column)
+        {
+            direction = origin.Column < target.Column
+                ? FaceDirection.Right
+                : FaceDirection.Left;
+        }
+        else if (origin.Column == target.Column && origin.Row != target.Row)
+        {
+            direction = origin.Row < target.Row
+                ? FaceDirection.Down
+                : FaceDirection.Up;
+        }
+        else
+        {
+            direction = default;
+            return false;
+        }
+
+        for (var cell = origin + direction; cell != target; cell += direction)
+        {
+            if (!IsWalkable(cell))
+            {
+                return false;
+            }
+        }
+
+        return IsWalkable(target);
+    }
+
+    public Cell FindNearestWalkableCell(Cell origin)
     {
         if (IsWalkable(origin))
         {
             return origin;
         }
 
-        var best = new Point2(0, 0);
+        var best = new Cell(0, 0);
         var bestDistance = int.MaxValue;
         var found = false;
         for (var row = 0; row < Rows; row++)
         {
             for (var column = 0; column < Columns; column++)
             {
-                var cell = new Point2(column, row);
+                var cell = new Cell(column, row);
                 if (!IsWalkable(cell))
                 {
                     continue;
                 }
 
-                var distance = Math.Abs(cell.X - origin.X) + Math.Abs(cell.Y - origin.Y);
+                var distance = Math.Abs(cell.Row - origin.Row) + Math.Abs(cell.Column - origin.Column);
                 if (distance >= bestDistance)
                 {
                     continue;
@@ -79,14 +119,14 @@ public struct Level
         return best;
     }
 
-    public readonly Vector2 CellToWorld(Point2 cell)
+    public readonly Vector2 CellToWorld(Cell cell)
     {
         return new Vector2(
-            -Width / 2f + cell.X * CellWidth,
-            -Height / 2f + cell.Y * CellHeight);
+            -Width / 2f + cell.Column * CellWidth,
+            -Height / 2f + cell.Row * CellHeight);
     }
 
-    public Vector2 CellToCenter(Point2 cell)
+    public readonly Vector2 CellToCenter(Cell cell)
     {
         return CellToWorld(cell) + new Vector2(CellWidth, CellHeight) * 0.5f;
     }
@@ -133,11 +173,15 @@ public sealed class LevelSystem : GameSystem
         {
             for (var column = 0; column < level.Columns; column++)
             {
+                var cell = new Cell(column, row);
                 switch (level.Maze[row, column])
                 {
                     case Tile.Wall:
                     case Tile.Corner:
-                        DrawCell(level, _wall, new Point2(column, row), Color.White);
+                        if (level.Contains(cell))
+                        {
+                            Batcher.Image(_wall.Texture, level.CellToWorld(cell), Color.White);
+                        }
                         break;
                 }
             }
@@ -161,15 +205,5 @@ public sealed class LevelSystem : GameSystem
         }
 
         return region;
-    }
-
-    private void DrawCell(in Level level, ImageAsset asset, Point2 cell, Color color)
-    {
-        if (!level.Contains(cell))
-        {
-            return;
-        }
-
-        Batcher.Image(asset.Texture, level.CellToWorld(cell), color);
     }
 }

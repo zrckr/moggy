@@ -76,6 +76,8 @@ public class Game : App
         RegisterSystem<ViewportSystem>();
         RegisterSystem<LevelSystem>();
         RegisterSystem<PlayerSystem>();
+        RegisterSystem<NavigationSystem>();
+        RegisterSystem<EnemySystem>();
         RegisterSystem<LevelMoverSystem>();
         RegisterSystem<CameraFollowSystem>();
         RegisterSystem<CameraSystem>();
