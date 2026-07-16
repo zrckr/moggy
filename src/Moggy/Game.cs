@@ -87,7 +87,8 @@ public class Game : App
         RegisterSystem<LevelMoverSystem>();
         RegisterSystem<CameraFollowSystem>();
         RegisterSystem<CameraSystem>();
-        RegisterSystem<SpriteRendering>();
+        RegisterSystem<SpritesSystem>();
+        RegisterSystem<HudSystem>();
 
         _tools = new ToolsHost(this, _registry, _assets);
     }

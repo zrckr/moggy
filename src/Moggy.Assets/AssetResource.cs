@@ -1,5 +1,3 @@
-using Foster.Framework;
-
 namespace Moggy.Assets;
 
 public abstract class AssetResource : IDisposable
@@ -12,7 +10,7 @@ public abstract class AssetResource : IDisposable
 
     public event Action? Disposed;
 
-    public abstract void Load(App app, Stream stream);
+    public abstract void Load(AssetLoadContext context, Stream stream);
 
     public virtual void Dispose()
     {

@@ -13,10 +13,9 @@ public sealed class ZipProvider : AssetProvider
 
     public override Stream LoadStream(string path)
     {
-        var normalizedPath = NormalizePath(path);
         foreach (var entry in _archive.Entries)
         {
-            if (!NormalizePath(entry.FullName).Equals(normalizedPath, StringComparison.OrdinalIgnoreCase))
+            if (!PathMatches(path, entry.FullName))
             {
                 continue;
             }

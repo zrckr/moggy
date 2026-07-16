@@ -31,6 +31,7 @@ public class AssetLoader : IDisposable
 #endif
         _types.Add(typeof(SpriteAsset));
         _types.Add(typeof(ImageAsset));
+        _types.Add(typeof(FontAsset));
     }
 
     public T Load<T>(string path) where T : AssetResource, new()
@@ -99,7 +100,9 @@ public class AssetLoader : IDisposable
             Id = id,
             Name = path
         };
-        asset.Load(_app, stream);
+
+        var context = new AssetLoadContext(_app, _provider, path);
+        asset.Load(context, stream);
 
         _entries.Add(new Entry
         {

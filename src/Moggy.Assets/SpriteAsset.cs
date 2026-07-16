@@ -1,20 +1,21 @@
-﻿using Foster.Framework;
+﻿using System.Text.Json.Serialization;
+using Foster.Framework;
 
 namespace Moggy.Assets;
 
 public sealed class SpriteAsset : AssetResource
 {
-    public IReadOnlyList<Frame> Frames => _frames;
+    [JsonIgnore] public IReadOnlyList<Frame> Frames => _frames;
 
-    public IReadOnlyList<Animation> Animations => _animations;
+    [JsonIgnore] public IReadOnlyList<Animation> Animations => _animations;
 
-    public Texture Texture { get; private set; } = null!;
+    [JsonIgnore] public Texture Texture { get; private set; } = null!;
 
     private Frame[] _frames = null!;
 
     private Animation[] _animations = null!;
 
-    public override void Load(App app, Stream stream)
+    public override void Load(AssetLoadContext context, Stream stream)
     {
         var aseprite = new Aseprite(stream);
         if (aseprite.Frames.Length == 0)
@@ -46,7 +47,7 @@ public sealed class SpriteAsset : AssetResource
             throw new InvalidOperationException($"Sprite '{Name}' was too large for a single texture.");
         }
 
-        Texture = new Texture(app.GraphicsDevice, output.Pages[0], Name);
+        Texture = new Texture(context.App.GraphicsDevice, output.Pages[0], Name);
         output.Pages[0].Dispose();
 
         _frames = new Frame[aseprite.Frames.Length];

@@ -55,9 +55,9 @@ public struct AnimatedSprite
     public Vector2 Offset;
 }
 
-public sealed class SpriteRendering : GameSystem
+public sealed class SpritesSystem : GameSystem
 {
-    private static readonly ILogger Logger = Serilog.Log.ForContext<SpriteRendering>();
+    private static readonly ILogger Logger = Serilog.Log.ForContext<SpritesSystem>();
 
     private readonly Dictionary<Entity, TimeSpan> _animationTimes = new();
 

@@ -11,11 +11,10 @@ public sealed class DirectoryProvider : AssetProvider
 
     public override Stream LoadStream(string path)
     {
-        var normalizePath = NormalizePath(path);
         foreach (var file in _directory.EnumerateFiles("*.*", SearchOption.AllDirectories))
         {
             var relativePath = Path.GetRelativePath(_directory.FullName, file.FullName);
-            if (NormalizePath(relativePath).Equals(normalizePath, StringComparison.OrdinalIgnoreCase))
+            if (PathMatches(path, relativePath))
             {
                 return file.OpenRead();
             }
