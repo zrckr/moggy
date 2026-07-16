@@ -4,9 +4,9 @@ using Moggy.Ecs;
 
 namespace Moggy;
 
-public struct LevelPosition
+public struct LevelTransform
 {
-    public Cell Cell;
+    public Cell Position;
 }
 
 public struct LevelMover
@@ -26,9 +26,9 @@ public sealed class LevelMoverSystem : GameSystem
     public override void Startup()
     {
         _movers = Registry.Query()
-            .Include<LevelPosition>()
+            .Include<LevelTransform>()
             .Include<LevelMover>()
-            .Include<Transform>()
+            .Include<SpriteTransform>()
             .Build();
     }
 
@@ -39,23 +39,23 @@ public sealed class LevelMoverSystem : GameSystem
         _completed.Clear();
         foreach (var entity in _movers)
         {
-            ref var position = ref Registry.Get<LevelPosition>(entity);
-            ref var mover = ref Registry.Get<LevelMover>(entity);
-            ref var transform = ref Registry.Get<Transform>(entity);
+            ref var levelTransform = ref Registry.Get<LevelTransform>(entity);
+            ref var levelMover = ref Registry.Get<LevelMover>(entity);
+            ref var spriteTransform = ref Registry.Get<SpriteTransform>(entity);
 
-            var from = level.CellToCenter(mover.From);
-            var to = level.CellToCenter(mover.To);
+            var from = level.CellToCenter(levelMover.From);
+            var to = level.CellToCenter(levelMover.To);
 
-            mover.Progress += mover.Speed * time.Delta;
-            if (mover.Progress >= 1f)
+            levelMover.Progress += levelMover.Speed * time.Delta;
+            if (levelMover.Progress >= 1f)
             {
-                position.Cell = mover.To;
-                transform.Position = to;
+                levelTransform.Position = levelMover.To;
+                spriteTransform.Position = to;
                 _completed.Add(entity);
                 continue;
             }
 
-            transform.Position = Vector2.Lerp(from, to, mover.Progress);
+            spriteTransform.Position = Vector2.Lerp(from, to, levelMover.Progress);
         }
 
         foreach (var entity in _completed)

@@ -87,25 +87,25 @@ public sealed class NavigationSystem : GameSystem
     {
         _target = Registry.Query()
             .Include<NavigationTarget>()
-            .Include<LevelPosition>()
+            .Include<LevelTransform>()
             .Build();
 
         ref var level = ref Registry.Singleton<Level>();
-        ref var position = ref Registry.Get<LevelPosition>(_target.Single());
+        ref var transform = ref Registry.Get<LevelTransform>(_target.Single());
 
-        var navigationEntity = Registry.Create(new Navigation(position.Cell, new int[level.Rows * level.Columns]));
+        var navigationEntity = Registry.Create(new Navigation(transform.Position, new int[level.Rows * level.Columns]));
 
         ref var navigation = ref Registry.Get<Navigation>(navigationEntity);
-        Rebuild(ref navigation, in level, position.Cell);
+        Rebuild(ref navigation, in level, transform.Position);
     }
 
     public override void Update(Time time)
     {
         ref var level = ref Registry.Singleton<Level>();
-        ref var position = ref Registry.Get<LevelPosition>(_target.Single());
+        ref var transform = ref Registry.Get<LevelTransform>(_target.Single());
         ref var navigation = ref Registry.Singleton<Navigation>();
 
-        navigation.TryRecord(position.Cell);
+        navigation.TryRecord(transform.Position);
 
         var target = navigation.GetOldestTraceCell();
         if (navigation.Target == target)

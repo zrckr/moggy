@@ -57,11 +57,11 @@ public sealed class PlayerSystem : GameSystem
 
         var player = Registry.Create(
             new Player(),
-            new LevelPosition
+            new LevelTransform
             {
-                Cell = startCell
+                Position = startCell
             },
-            new Transform
+            new SpriteTransform
             {
                 Position = level.CellToCenter(startCell),
                 Scale = new Vector2(2f)
@@ -81,8 +81,8 @@ public sealed class PlayerSystem : GameSystem
 
         _player = Registry.Query()
             .Include<Player>()
-            .Include<LevelPosition>()
-            .Include<Transform>()
+            .Include<LevelTransform>()
+            .Include<SpriteTransform>()
             .Include<AnimatedSprite>()
             .Build();
     }
@@ -92,7 +92,7 @@ public sealed class PlayerSystem : GameSystem
         var playerEntity = _player.Single();
         ref var level = ref Registry.Singleton<Level>();
         ref var player = ref Registry.Get<Player>(playerEntity);
-        ref var levelPosition = ref Registry.Get<LevelPosition>(playerEntity);
+        ref var transform = ref Registry.Get<LevelTransform>(playerEntity);
         ref var animated = ref Registry.Get<AnimatedSprite>(playerEntity);
 
         if (Registry.Has<LevelMover>(playerEntity))
@@ -109,8 +109,8 @@ public sealed class PlayerSystem : GameSystem
         {
             player.State = PlayerState.Idle;
 
-            if (TryChooseMoveDirection(ref player, in level, in levelPosition, out var direction) &&
-                TryStartMove(playerEntity, in level, in levelPosition, direction))
+            if (TryChooseMoveDirection(ref player, in level, in transform, out var direction) &&
+                TryStartMove(playerEntity, in level, in transform, direction))
             {
                 player.State = PlayerState.Move;
                 animated.Sprite = _moveSprite;
@@ -125,9 +125,9 @@ public sealed class PlayerSystem : GameSystem
         animated.FlipHorizontal = player.Direction.IsAnimationFlipped();
     }
 
-    private bool TryStartMove(Entity entity, in Level level, in LevelPosition levelPosition, FaceDirection direction)
+    private bool TryStartMove(Entity entity, in Level level, in LevelTransform levelTransform, FaceDirection direction)
     {
-        var target = levelPosition.Cell + direction;
+        var target = levelTransform.Position + direction;
         if (!level.IsWalkable(target))
         {
             return false;
@@ -135,7 +135,7 @@ public sealed class PlayerSystem : GameSystem
 
         Registry.Set(entity, new LevelMover
         {
-            From = levelPosition.Cell,
+            From = levelTransform.Position,
             To = target,
             Progress = 0f,
             Speed = 1f / CellMoveDuration
@@ -147,7 +147,7 @@ public sealed class PlayerSystem : GameSystem
     private bool TryChooseMoveDirection(
         ref Player player,
         in Level level,
-        in LevelPosition levelPosition,
+        in LevelTransform levelTransform,
         out FaceDirection direction)
     {
         if (!TryReadBufferedOrHeldDirection(ref player, out var requested))
@@ -157,7 +157,7 @@ public sealed class PlayerSystem : GameSystem
         }
 
         player.Direction = requested;
-        if (!level.IsWalkable(levelPosition.Cell + requested))
+        if (!level.IsWalkable(levelTransform.Position + requested))
         {
             direction = default;
             return false;

@@ -29,14 +29,13 @@ public sealed class NavigationTool : ToolSystem
     {
         _enemies = Registry.Query()
             .Include<Enemy>()
-            .Include<LevelPosition>()
+            .Include<LevelTransform>()
             .Build();
 
         _target = Registry.Query()
             .Include<NavigationTarget>()
-            .Include<LevelPosition>()
+            .Include<LevelTransform>()
             .Build();
-
     }
 
     public override void Draw(Time time)
@@ -63,8 +62,8 @@ public sealed class NavigationTool : ToolSystem
 
         if (_showRaycasts)
         {
-            ref var targetPosition = ref Registry.Get<LevelPosition>(_target.Single());
-            DrawRaycasts(drawList, in level, targetPosition.Cell, in camera, in viewport);
+            ref var levelTransform = ref Registry.Get<LevelTransform>(_target.Single());
+            DrawRaycasts(drawList, in level, levelTransform.Position, in camera, in viewport);
         }
     }
 
@@ -79,13 +78,13 @@ public sealed class NavigationTool : ToolSystem
 
         foreach (var entity in _enemies)
         {
-            ref var position = ref Registry.Get<LevelPosition>(entity);
-            if (!level.TryRaycast(position.Cell, target, out _))
+            ref var levelTransform = ref Registry.Get<LevelTransform>(entity);
+            if (!level.TryRaycast(levelTransform.Position, target, out _))
             {
                 continue;
             }
 
-            var enemyPosition = ToScreen(in level, position.Cell, in camera, in viewport);
+            var enemyPosition = ToScreen(in level, levelTransform.Position, in camera, in viewport);
             drawList.AddLine(enemyPosition, targetPosition, RaycastColor.ABGR, LineThickness);
         }
     }

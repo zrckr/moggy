@@ -6,7 +6,7 @@ using Serilog;
 
 namespace Moggy;
 
-public struct Transform
+public struct SpriteTransform
 {
     public Vector2 Position;
     public Vector2 Scale;
@@ -68,12 +68,12 @@ public sealed class SpritesSystem : GameSystem
     public override void Startup()
     {
         _animatedSprites = Registry.Query()
-            .Include<Transform>()
+            .Include<SpriteTransform>()
             .Include<AnimatedSprite>()
             .Build();
 
         _staticSprites = Registry.Query()
-            .Include<Transform>()
+            .Include<SpriteTransform>()
             .Include<StaticSprite>()
             .Build();
     }
@@ -93,14 +93,14 @@ public sealed class SpritesSystem : GameSystem
 
         foreach (var entity in _staticSprites)
         {
-            ref var transform = ref Registry.Get<Transform>(entity);
+            ref var transform = ref Registry.Get<SpriteTransform>(entity);
             ref var renderer = ref Registry.Get<StaticSprite>(entity);
             RenderStaticSprite(in transform, in renderer);
         }
 
         foreach (var entity in _animatedSprites)
         {
-            ref var transform = ref Registry.Get<Transform>(entity);
+            ref var transform = ref Registry.Get<SpriteTransform>(entity);
             ref var renderer = ref Registry.Get<AnimatedSprite>(entity);
             RenderAnimatedSprite(entity, in transform, in renderer);
         }
@@ -130,15 +130,15 @@ public sealed class SpritesSystem : GameSystem
         renderer.Frame = frame;
     }
 
-    private void RenderStaticSprite(in Transform transform, in StaticSprite renderer)
+    private void RenderStaticSprite(in SpriteTransform spriteTransform, in StaticSprite renderer)
     {
         if (Assets.TryGet<SpriteAsset>(renderer.Sprite, out var sprite) && sprite is not null && sprite.Frames.Count != 0)
         {
-            RenderFrame(sprite.Frames[0], transform, renderer.Offset, renderer.FlipHorizontal, renderer.FlipVertical);
+            RenderFrame(sprite.Frames[0], spriteTransform, renderer.Offset, renderer.FlipHorizontal, renderer.FlipVertical);
         }
     }
 
-    private void RenderAnimatedSprite(Entity entity, in Transform transform, in AnimatedSprite renderer)
+    private void RenderAnimatedSprite(Entity entity, in SpriteTransform spriteTransform, in AnimatedSprite renderer)
     {
         if (!TryGetAnimation(entity, in renderer, out var sprite, out var animation))
         {
@@ -147,7 +147,7 @@ public sealed class SpritesSystem : GameSystem
 
         var frameOffset = Math.Clamp(renderer.Frame, 0, animation.Count - 1);
         var frame = sprite.Frames[animation.Start + frameOffset];
-        RenderFrame(frame, transform, renderer.Offset, renderer.FlipHorizontal, renderer.FlipVertical);
+        RenderFrame(frame, spriteTransform, renderer.Offset, renderer.FlipHorizontal, renderer.FlipVertical);
     }
 
     private bool TryGetAnimation(
@@ -179,15 +179,15 @@ public sealed class SpritesSystem : GameSystem
         return true;
     }
 
-    private void RenderFrame(SpriteAsset.Frame frame, in Transform transform, Vector2 offset, bool flipH, bool flipV)
+    private void RenderFrame(SpriteAsset.Frame frame, in SpriteTransform spriteTransform, Vector2 offset, bool flipH, bool flipV)
     {
         var origin = frame.Subtexture.Size * 0.5f;
-        var scale = transform.Scale;
+        var scale = spriteTransform.Scale;
         if (flipH) scale.X *= -1;
         if (flipV) scale.Y *= -1;
 
-        var position = SnapPosition(transform.Position + offset, origin, scale);
-        Batcher.Image(frame.Subtexture, position, origin, scale, transform.Rotation, Color.White);
+        var position = SnapPosition(spriteTransform.Position + offset, origin, scale);
+        Batcher.Image(frame.Subtexture, position, origin, scale, spriteTransform.Rotation, Color.White);
     }
 
     private static Vector2 SnapPosition(Vector2 position, Vector2 origin, Vector2 scale)

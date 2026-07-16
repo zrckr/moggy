@@ -42,11 +42,11 @@ public sealed class EnemySystem : GameSystem
 
             Registry.Create(
                 new Enemy(),
-                new LevelPosition
+                new LevelTransform
                 {
-                    Cell = startCell
+                    Position = startCell
                 },
-                new Transform
+                new SpriteTransform
                 {
                     Position = level.CellToCenter(startCell),
                     Scale = new Vector2(2f)
@@ -60,13 +60,13 @@ public sealed class EnemySystem : GameSystem
 
         _target = Registry.Query()
             .Include<NavigationTarget>()
-            .Include<LevelPosition>()
+            .Include<LevelTransform>()
             .Build();
 
         _enemies = Registry.Query()
             .Include<Enemy>()
-            .Include<LevelPosition>()
-            .Include<Transform>()
+            .Include<LevelTransform>()
+            .Include<SpriteTransform>()
             .Include<AnimatedSprite>()
             .Build();
     }
@@ -75,7 +75,7 @@ public sealed class EnemySystem : GameSystem
     {
         ref var level = ref Registry.Singleton<Level>();
         ref var navigation = ref Registry.Singleton<Navigation>();
-        ref var targetPosition = ref Registry.Get<LevelPosition>(_target.Single());
+        ref var levelTransform = ref Registry.Get<LevelTransform>(_target.Single());
 
         // Claim current cells and destinations before planning this frame's moves.
         ClaimOccupiedCells();
@@ -83,22 +83,22 @@ public sealed class EnemySystem : GameSystem
         foreach (var entity in _enemies)
         {
             ref var enemy = ref Registry.Get<Enemy>(entity);
-            ref var levelPosition = ref Registry.Get<LevelPosition>(entity);
+            ref var transform = ref Registry.Get<LevelTransform>(entity);
             ref var animated = ref Registry.Get<AnimatedSprite>(entity);
 
             if (!Registry.Has<LevelMover>(entity))
             {
                 var startedMove = false;
-                if (level.TryRaycast(levelPosition.Cell, targetPosition.Cell, out var direction))
+                if (level.TryRaycast(transform.Position, levelTransform.Position, out var direction))
                 {
-                    navigation.ResetTrace(targetPosition.Cell);
-                    startedMove = TryStartDirectedMove(entity, ref enemy, in level, in levelPosition, direction);
+                    navigation.ResetTrace(levelTransform.Position);
+                    startedMove = TryStartDirectedMove(entity, ref enemy, in level, in transform, direction);
                 }
 
                 if (!startedMove &&
-                    !TryStartTraceMove(entity, ref enemy, in level, in navigation, in levelPosition))
+                    !TryStartTraceMove(entity, ref enemy, in level, in navigation, in transform))
                 {
-                    TryStartMove(entity, ref enemy, in level, in navigation, in levelPosition);
+                    TryStartMove(entity, ref enemy, in level, in navigation, in transform);
                 }
             }
 
@@ -112,15 +112,15 @@ public sealed class EnemySystem : GameSystem
         ref Enemy enemy,
         in Level level,
         in Navigation navigation,
-        in LevelPosition position)
+        in LevelTransform transform)
     {
-        var distance = navigation.GetDistance(in level, position.Cell);
+        var distance = navigation.GetDistance(in level, transform.Position);
         if (distance == Navigation.Unreachable)
         {
             return;
         }
 
-        if (position.Cell == navigation.Target)
+        if (transform.Position == navigation.Target)
         {
             return;
         }
@@ -133,7 +133,7 @@ public sealed class EnemySystem : GameSystem
 
         foreach (var direction in Enum.GetValues<FaceDirection>())
         {
-            var target = position.Cell + direction;
+            var target = transform.Position + direction;
             if (!level.IsWalkable(target) || _claimedCells.Contains(target))
             {
                 continue;
@@ -158,7 +158,7 @@ public sealed class EnemySystem : GameSystem
 
         if (bestDistance != distance)
         {
-            StartMove(entity, ref enemy, position.Cell, bestDirection, position.Cell + bestDirection);
+            StartMove(entity, ref enemy, transform.Position, bestDirection, transform.Position + bestDirection);
             return;
         }
 
@@ -168,7 +168,7 @@ public sealed class EnemySystem : GameSystem
         }
 
         // A dead end or reservation leaves reversing as the only viable route.
-        StartMove(entity, ref enemy, position.Cell, reverseDirection, reverseCell);
+        StartMove(entity, ref enemy, transform.Position, reverseDirection, reverseCell);
     }
 
     private bool TryStartTraceMove(
@@ -176,22 +176,22 @@ public sealed class EnemySystem : GameSystem
         ref Enemy enemy,
         in Level level,
         in Navigation navigation,
-        in LevelPosition position)
+        in LevelTransform transform)
     {
-        if (!navigation.TryGetTraceSuccessor(position.Cell, out var target) ||
-            !level.TryRaycast(position.Cell, target, out var direction))
+        if (!navigation.TryGetTraceSuccessor(transform.Position, out var target) ||
+            !level.TryRaycast(transform.Position, target, out var direction))
         {
             return false;
         }
 
-        return TryStartDirectedMove(entity, ref enemy, in level, in position, direction);
+        return TryStartDirectedMove(entity, ref enemy, in level, in transform, direction);
     }
 
     private bool TryStartDirectedMove(
         Entity entity,
         ref Enemy enemy,
         in Level level,
-        in LevelPosition position,
+        in LevelTransform transform,
         FaceDirection direction)
     {
         if (direction == enemy.Direction.Opposite())
@@ -199,13 +199,13 @@ public sealed class EnemySystem : GameSystem
             return false;
         }
 
-        var target = position.Cell + direction;
+        var target = transform.Position + direction;
         if (!level.IsWalkable(target) || _claimedCells.Contains(target))
         {
             return false;
         }
 
-        StartMove(entity, ref enemy, position.Cell, direction, target);
+        StartMove(entity, ref enemy, transform.Position, direction, target);
         return true;
     }
 
@@ -229,8 +229,8 @@ public sealed class EnemySystem : GameSystem
 
         foreach (var entity in _enemies)
         {
-            ref var position = ref Registry.Get<LevelPosition>(entity);
-            _claimedCells.Add(position.Cell);
+            ref var transform = ref Registry.Get<LevelTransform>(entity);
+            _claimedCells.Add(transform.Position);
 
             if (!Registry.Has<LevelMover>(entity))
             {

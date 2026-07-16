@@ -14,8 +14,8 @@ public sealed class PlayerTool : ToolSystem
     {
         _player = Registry.Query()
             .Include<Player>()
-            .Include<LevelPosition>()
-            .Include<Transform>()
+            .Include<LevelTransform>()
+            .Include<SpriteTransform>()
             .Include<AnimatedSprite>()
             .Build();
     }
@@ -26,8 +26,8 @@ public sealed class PlayerTool : ToolSystem
         if (ImGui.Begin(Title, ref IsOpen, ImGuiWindowFlags.AlwaysAutoResize))
         {
             ref var player = ref Registry.Get<Player>(entity);
-            ref var levelPosition = ref Registry.Get<LevelPosition>(entity);
-            ref var transform = ref Registry.Get<Transform>(entity);
+            ref var levelTransform = ref Registry.Get<LevelTransform>(entity);
+            ref var spriteTransform = ref Registry.Get<SpriteTransform>(entity);
             ref var sprite = ref Registry.Get<AnimatedSprite>(entity);
 
             ImGui.LabelText("Entity", entity.Id.ToString());
@@ -37,9 +37,9 @@ public sealed class PlayerTool : ToolSystem
             ImGui.LabelText("Buffered", player.BufferedDirection?.ToString() ?? "-");
 
             ImGui.SeparatorText("Movement");
-            ImGui.LabelText("Cell", levelPosition.Cell.ToString());
-            ImGui.LabelText("Position", transform.Position.ToString());
-            ImGui.LabelText("Scale", transform.Scale.ToString());
+            ImGui.LabelText("Cell", levelTransform.Position.ToString());
+            ImGui.LabelText("Position", spriteTransform.Position.ToString());
+            ImGui.LabelText("Scale", spriteTransform.Scale.ToString());
             ImGui.LabelText("Moving", Registry.Has<LevelMover>(entity).ToString());
 
             ImGui.SeparatorText("Sprite");

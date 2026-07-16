@@ -28,7 +28,7 @@ public sealed class CameraFollowSystem : GameSystem
 
         _player = Registry.Query()
             .Include<Player>()
-            .Include<Transform>()
+            .Include<SpriteTransform>()
             .Build();
 
         var camera = _camera.Single();
@@ -50,7 +50,7 @@ public sealed class CameraFollowSystem : GameSystem
         ref var camera = ref Registry.Get<Camera>(cameraEntity);
         ref var viewport = ref Registry.Get<Viewport>(cameraEntity);
         ref var follow = ref Registry.Get<CameraFollow>(cameraEntity);
-        ref var target = ref Registry.Get<Transform>(follow.Target);
+        ref var target = ref Registry.Get<SpriteTransform>(follow.Target);
 
         var halfDrag = follow.DragSize / (2f * camera.Zoom);
         var min = camera.Position - halfDrag;
@@ -80,7 +80,7 @@ public sealed class CameraFollowSystem : GameSystem
     private void EnsureFollowTarget(Entity camera)
     {
         ref var follow = ref Registry.Get<CameraFollow>(camera);
-        if (Registry.IsAlive(follow.Target) && Registry.Has<Transform>(follow.Target))
+        if (Registry.IsAlive(follow.Target) && Registry.Has<SpriteTransform>(follow.Target))
         {
             return;
         }
