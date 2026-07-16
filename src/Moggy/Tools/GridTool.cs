@@ -15,19 +15,9 @@ public class GridTool : ToolSystem
 
     public override string Title => "Grid";
 
-    private Query _viewport = null!;
-
-    public override void Startup()
-    {
-        _viewport = Registry.Query()
-            .Include<Viewport>()
-            .Build();
-    }
-
     public override void Draw(Time time)
     {
-        var entity = _viewport.Single();
-        ref var viewport = ref Registry.Get<Viewport>(entity);
+        ref var viewport = ref Registry.Singleton<Viewport>();
 
         var screenOrigin = new Vector2(viewport.WindowBounds.X, viewport.WindowBounds.Y);
         var screenWidth = viewport.VirtualWidth * viewport.Scale;

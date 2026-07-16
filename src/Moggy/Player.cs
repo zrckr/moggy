@@ -37,8 +37,6 @@ public sealed class PlayerSystem : GameSystem
 {
     private const float CellMoveDuration = 0.15f;
 
-    private Query _level = null!;
-
     private Query _player = null!;
 
     private VirtualDevice _inputDevice = null!;
@@ -51,34 +49,29 @@ public sealed class PlayerSystem : GameSystem
 
     public override void Startup()
     {
-        _level = Registry.Query()
-            .Include<Level>()
-            .Build();
-
         _idleSprite = Assets.Load<SpriteAsset>("Player/Idle");
         _moveSprite = Assets.Load<SpriteAsset>("Player/Move");
 
-        var levelEntity = _level.Single();
-        ref var level = ref Registry.Get<Level>(levelEntity);
+        ref var level = ref Registry.Singleton<Level>();
         var startCell = level.FindNearestWalkableCell(new Cell(level.Columns / 2, level.Rows / 2));
 
-        var player = Registry.Create();
-        Registry.Set(player, new Player());
-        Registry.Set(player, new NavigationTarget());
-        Registry.Set(player, new LevelPosition
-        {
-            Cell = startCell
-        });
-        Registry.Set(player, new Transform
-        {
-            Position = level.CellToCenter(startCell),
-            Scale = new Vector2(2f)
-        });
-        Registry.Set(player, new AnimatedSprite
-        {
-            Animation = FaceDirection.Down.GetAnimationName(),
-            Sprite = _idleSprite
-        });
+        var player = Registry.Create(
+            new Player(),
+            new LevelPosition
+            {
+                Cell = startCell
+            },
+            new Transform
+            {
+                Position = level.CellToCenter(startCell),
+                Scale = new Vector2(2f)
+            },
+            new AnimatedSprite
+            {
+                Animation = FaceDirection.Down.GetAnimationName(),
+                Sprite = _idleSprite
+            });
+        Registry.SetTag<NavigationTarget>(player);
 
         _inputDevice = new VirtualDevice(App.Input, "Player");
         _inputDevice.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
@@ -97,8 +90,7 @@ public sealed class PlayerSystem : GameSystem
     public override void Update(Time time)
     {
         var playerEntity = _player.Single();
-        var levelEntity = _level.Single();
-        ref var level = ref Registry.Get<Level>(levelEntity);
+        ref var level = ref Registry.Singleton<Level>();
         ref var player = ref Registry.Get<Player>(playerEntity);
         ref var levelPosition = ref Registry.Get<LevelPosition>(playerEntity);
         ref var animated = ref Registry.Get<AnimatedSprite>(playerEntity);

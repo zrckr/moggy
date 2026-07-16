@@ -30,6 +30,7 @@ public sealed class Query
     /// </summary>
     public Enumerator GetEnumerator()
     {
+        _registry.BeginEnumeration();
         return new Enumerator(this);
     }
 
@@ -85,12 +86,19 @@ public sealed class Query
     public Entity First()
     {
         var enumerator = GetEnumerator();
-        if (!enumerator.MoveNext())
+        try
         {
-            throw new InvalidOperationException("Query contains no matching entities.");
-        }
+            if (!enumerator.MoveNext())
+            {
+                throw new InvalidOperationException("Query contains no matching entities.");
+            }
 
-        return enumerator.Current;
+            return enumerator.Current;
+        }
+        finally
+        {
+            enumerator.Dispose();
+        }
     }
 
     /// <summary>
@@ -99,20 +107,27 @@ public sealed class Query
     public Entity Single()
     {
         var enumerator = GetEnumerator();
-        if (!enumerator.MoveNext())
+        try
         {
-            throw new InvalidOperationException("Query contains no matching entities.");
-        }
+            if (!enumerator.MoveNext())
+            {
+                throw new InvalidOperationException("Query contains no matching entities.");
+            }
 
-        var entity = enumerator.Current;
-        if (enumerator.MoveNext())
+            var entity = enumerator.Current;
+            if (enumerator.MoveNext())
+            {
+                throw new InvalidOperationException(
+                    "Query contains more than one matching entity."
+                );
+            }
+
+            return entity;
+        }
+        finally
         {
-            throw new InvalidOperationException(
-                "Query contains more than one matching entity."
-            );
+            enumerator.Dispose();
         }
-
-        return entity;
     }
 
     /// <summary>
@@ -121,18 +136,25 @@ public sealed class Query
     public Entity Last()
     {
         var enumerator = GetEnumerator();
-        if (!enumerator.MoveNext())
+        try
         {
-            throw new InvalidOperationException("Query contains no matching entities.");
-        }
+            if (!enumerator.MoveNext())
+            {
+                throw new InvalidOperationException("Query contains no matching entities.");
+            }
 
-        var entity = enumerator.Current;
-        while (enumerator.MoveNext())
+            var entity = enumerator.Current;
+            while (enumerator.MoveNext())
+            {
+                entity = enumerator.Current;
+            }
+
+            return entity;
+        }
+        finally
         {
-            entity = enumerator.Current;
+            enumerator.Dispose();
         }
-
-        return entity;
     }
 
 
@@ -142,7 +164,14 @@ public sealed class Query
     public bool Any()
     {
         var enumerator = GetEnumerator();
-        return enumerator.MoveNext();
+        try
+        {
+            return enumerator.MoveNext();
+        }
+        finally
+        {
+            enumerator.Dispose();
+        }
     }
 
     /// <summary>
@@ -161,9 +190,10 @@ public sealed class Query
     }
 
     /// <summary>
-    /// Iterates matching entities while the registry structure remains unchanged.
+    /// Iterates matching entities. Immediate structural changes invalidate the
+    /// enumeration; deferred changes are applied after it completes.
     /// </summary>
-    public struct Enumerator(Query query)
+    public struct Enumerator(Query query) : IDisposable
     {
         /// <summary>
         /// Gets the current entity.
@@ -174,11 +204,18 @@ public sealed class Query
 
         private int _index = -1;
 
+        private bool _disposed;
+
         /// <summary>
         /// Advances to the next matching entity.
         /// </summary>
         public bool MoveNext()
         {
+            if (_disposed)
+            {
+                return false;
+            }
+
             if (_version != query._registry.Version)
             {
                 throw new InvalidOperationException("Entity structure changed while a query was being enumerated.");
@@ -225,7 +262,23 @@ public sealed class Query
                 return true;
             }
 
+            Dispose();
             return false;
+        }
+
+        /// <summary>
+        /// Completes the enumeration and applies any pending structural changes when
+        /// this is the last active query enumerator.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            query._registry.EndEnumeration();
         }
     }
 }

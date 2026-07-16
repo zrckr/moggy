@@ -81,32 +81,19 @@ public struct Navigation
 
 public sealed class NavigationSystem : GameSystem
 {
-    private Query _level = null!;
-
-    private Query _navigation = null!;
-
     private Query _target = null!;
 
     public override void Startup()
     {
-        _level = Registry.Query()
-            .Include<Level>()
-            .Build();
-
         _target = Registry.Query()
             .Include<NavigationTarget>()
             .Include<LevelPosition>()
             .Build();
 
-        ref var level = ref Registry.Get<Level>(_level.Single());
+        ref var level = ref Registry.Singleton<Level>();
         ref var position = ref Registry.Get<LevelPosition>(_target.Single());
 
-        var navigationEntity = Registry.Create();
-        Registry.Set(navigationEntity, new Navigation(position.Cell, new int[level.Rows * level.Columns]));
-
-        _navigation = Registry.Query()
-            .Include<Navigation>()
-            .Build();
+        var navigationEntity = Registry.Create(new Navigation(position.Cell, new int[level.Rows * level.Columns]));
 
         ref var navigation = ref Registry.Get<Navigation>(navigationEntity);
         Rebuild(ref navigation, in level, position.Cell);
@@ -114,9 +101,9 @@ public sealed class NavigationSystem : GameSystem
 
     public override void Update(Time time)
     {
-        ref var level = ref Registry.Get<Level>(_level.Single());
+        ref var level = ref Registry.Singleton<Level>();
         ref var position = ref Registry.Get<LevelPosition>(_target.Single());
-        ref var navigation = ref Registry.Get<Navigation>(_navigation.Single());
+        ref var navigation = ref Registry.Singleton<Navigation>();
 
         navigation.TryRecord(position.Cell);
 

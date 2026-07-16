@@ -17,21 +17,10 @@ public struct Camera(Vector2 position)
 
 public sealed class CameraSystem : GameSystem
 {
-    private Query _camera = null!;
-
-    public override void Startup()
-    {
-        _camera = Registry.Query()
-            .Include<Camera>()
-            .Include<Viewport>()
-            .Build();
-    }
-
     public override void Update(Time time)
     {
-        var entity = _camera.Single();
-        ref var camera = ref Registry.Get<Camera>(entity);
-        ref var viewport = ref Registry.Get<Viewport>(entity);
+        ref var camera = ref Registry.Singleton<Camera>();
+        ref var viewport = ref Registry.Singleton<Viewport>();
 
         camera.WorldToVirtual =
             Matrix3x2.CreateTranslation(-camera.Position) *

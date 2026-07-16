@@ -17,17 +17,9 @@ public sealed class NavigationTool : ToolSystem
 
     public override string Title => "Navigation";
 
-    private Query _camera = null!;
-
     private Query _enemies = null!;
 
-    private Query _level = null!;
-
-    private Query _navigation = null!;
-
     private Query _target = null!;
-
-    private Query _viewport = null!;
 
     private bool _showRaycasts = true;
 
@@ -35,21 +27,9 @@ public sealed class NavigationTool : ToolSystem
 
     public override void Startup()
     {
-        _camera = Registry.Query()
-            .Include<Camera>()
-            .Build();
-
         _enemies = Registry.Query()
             .Include<Enemy>()
             .Include<LevelPosition>()
-            .Build();
-
-        _level = Registry.Query()
-            .Include<Level>()
-            .Build();
-
-        _navigation = Registry.Query()
-            .Include<Navigation>()
             .Build();
 
         _target = Registry.Query()
@@ -57,18 +37,14 @@ public sealed class NavigationTool : ToolSystem
             .Include<LevelPosition>()
             .Build();
 
-        _viewport = Registry.Query()
-            .Include<Viewport>()
-            .Build();
     }
 
     public override void Draw(Time time)
     {
-        ref var level = ref Registry.Get<Level>(_level.Single());
-        ref var navigation = ref Registry.Get<Navigation>(_navigation.Single());
-        ref var targetPosition = ref Registry.Get<LevelPosition>(_target.Single());
-        ref var camera = ref Registry.Get<Camera>(_camera.Single());
-        ref var viewport = ref Registry.Get<Viewport>(_viewport.Single());
+        ref var level = ref Registry.Singleton<Level>();
+        ref var navigation = ref Registry.Singleton<Navigation>();
+        ref var camera = ref Registry.Singleton<Camera>();
+        ref var viewport = ref Registry.Singleton<Viewport>();
 
         if (ImGui.Begin(Title, ref IsOpen, ImGuiWindowFlags.AlwaysAutoResize))
         {
@@ -87,6 +63,7 @@ public sealed class NavigationTool : ToolSystem
 
         if (_showRaycasts)
         {
+            ref var targetPosition = ref Registry.Get<LevelPosition>(_target.Single());
             DrawRaycasts(drawList, in level, targetPosition.Cell, in camera, in viewport);
         }
     }

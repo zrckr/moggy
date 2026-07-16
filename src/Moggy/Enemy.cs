@@ -18,9 +18,7 @@ public sealed class EnemySystem : GameSystem
 
     private const int SpawnSeed = 0;
 
-    private Query _level = null!;
-
-    private Query _navigation = null!;
+    private Query _enemies = null!;
 
     private Query _target = null!;
 
@@ -30,14 +28,9 @@ public sealed class EnemySystem : GameSystem
 
     public override void Startup()
     {
-        _level = Registry.Query()
-            .Include<Level>()
-            .Build();
-
         _moveSprite = Assets.Load<SpriteAsset>("Divil/Move");
 
-        var levelEntity = _level.Single();
-        ref var level = ref Registry.Get<Level>(levelEntity);
+        ref var level = ref Registry.Singleton<Level>();
 
         var random = new Random(SpawnSeed);
         var spawnCells = new HashSet<Cell>();
@@ -47,53 +40,47 @@ public sealed class EnemySystem : GameSystem
             var startCell = FindNearestUnclaimedWalkableCell(in level, origin, spawnCells);
             spawnCells.Add(startCell);
 
-            var enemy = Registry.Create();
-            Registry.Set(enemy, new Enemy());
-            Registry.Set(enemy, new LevelPosition
-            {
-                Cell = startCell
-            });
-            Registry.Set(enemy, new Transform
-            {
-                Position = level.CellToCenter(startCell),
-                Scale = new Vector2(2f)
-            });
-            Registry.Set(enemy, new AnimatedSprite
-            {
-                Animation = FaceDirection.Down.GetAnimationName(),
-                Sprite = _moveSprite
-            });
+            Registry.Create(
+                new Enemy(),
+                new LevelPosition
+                {
+                    Cell = startCell
+                },
+                new Transform
+                {
+                    Position = level.CellToCenter(startCell),
+                    Scale = new Vector2(2f)
+                },
+                new AnimatedSprite
+                {
+                    Animation = FaceDirection.Down.GetAnimationName(),
+                    Sprite = _moveSprite
+                });
         }
-
-        _navigation = Registry.Query()
-            .Include<Navigation>()
-            .Build();
 
         _target = Registry.Query()
             .Include<NavigationTarget>()
             .Include<LevelPosition>()
             .Build();
-    }
 
-    public override void Update(Time time)
-    {
-        ref var level = ref Registry.Get<Level>(_level.Single());
-        ref var navigation = ref Registry.Get<Navigation>(_navigation.Single());
-        ref var targetPosition = ref Registry.Get<LevelPosition>(_target.Single());
-
-        var enemies = Registry.Query()
+        _enemies = Registry.Query()
             .Include<Enemy>()
             .Include<LevelPosition>()
             .Include<Transform>()
             .Include<AnimatedSprite>()
             .Build();
+    }
 
-        var entities = enemies.Collect();
+    public override void Update(Time time)
+    {
+        ref var level = ref Registry.Singleton<Level>();
+        ref var navigation = ref Registry.Singleton<Navigation>();
+        ref var targetPosition = ref Registry.Get<LevelPosition>(_target.Single());
 
         // Claim current cells and destinations before planning this frame's moves.
-        ClaimOccupiedCells(entities);
+        ClaimOccupiedCells();
 
-        foreach (var entity in entities)
+        foreach (var entity in _enemies)
         {
             ref var enemy = ref Registry.Get<Enemy>(entity);
             ref var levelPosition = ref Registry.Get<LevelPosition>(entity);
@@ -227,7 +214,7 @@ public sealed class EnemySystem : GameSystem
         enemy.Direction = direction;
         _claimedCells.Add(targetCell);
 
-        Registry.Set(entity, new LevelMover
+        Registry.SetDeferred(entity, new LevelMover
         {
             From = from,
             To = targetCell,
@@ -236,11 +223,11 @@ public sealed class EnemySystem : GameSystem
         });
     }
 
-    private void ClaimOccupiedCells(IReadOnlyList<Entity> entities)
+    private void ClaimOccupiedCells()
     {
         _claimedCells.Clear();
 
-        foreach (var entity in entities)
+        foreach (var entity in _enemies)
         {
             ref var position = ref Registry.Get<LevelPosition>(entity);
             _claimedCells.Add(position.Cell);

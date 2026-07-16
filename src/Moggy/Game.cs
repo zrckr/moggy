@@ -65,9 +65,9 @@ public class Game : App
 
     protected override void Startup()
     {
-        _view = _registry.Create();
-        _registry.Set(_view, new Viewport(Mathz.VirtualWidth, Mathz.VirtualHeight, Mathz.ViewportSize));
-        _registry.Set(_view, new Camera(Vector2.Zero));
+        _view = _registry.Create(
+            new Viewport(Mathz.VirtualWidth, Mathz.VirtualHeight, Mathz.ViewportSize),
+            new Camera(Vector2.Zero));
         _screen = new Target(GraphicsDevice, Mathz.VirtualWidth, Mathz.VirtualHeight, "GameScreen");
         _batcher = new Batcher(GraphicsDevice);
         _imgui = new ImGuiRenderer(this);

@@ -17,8 +17,6 @@ public sealed class CameraFollowSystem : GameSystem
 
     private Query _camera = null!;
 
-    private Query _level = null!;
-
     private Query _player = null!;
 
     public override void Startup()
@@ -26,10 +24,6 @@ public sealed class CameraFollowSystem : GameSystem
         _camera = Registry.Query()
             .Include<Camera>()
             .Include<Viewport>()
-            .Build();
-
-        _level = Registry.Query()
-            .Include<Level>()
             .Build();
 
         _player = Registry.Query()
@@ -96,9 +90,7 @@ public sealed class CameraFollowSystem : GameSystem
 
     private void ClampToLevelBounds(ref Camera camera, in Viewport viewport)
     {
-        var levelEntity = _level.Single();
-        ref var level = ref Registry.Get<Level>(levelEntity);
-
+        ref var level = ref Registry.Singleton<Level>();
         var halfVisible = new Vector2(viewport.ContentBounds.Width, viewport.ContentBounds.Height) / (2f * camera.Zoom);
         var halfLevel = new Vector2(level.Width, level.Height) * 0.5f;
 

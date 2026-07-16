@@ -19,18 +19,12 @@ public struct LevelMover
 
 public sealed class LevelMoverSystem : GameSystem
 {
-    private Query _level = null!;
-
     private Query _movers = null!;
 
     private readonly List<Entity> _completed = new();
 
     public override void Startup()
     {
-        _level = Registry.Query()
-            .Include<Level>()
-            .Build();
-
         _movers = Registry.Query()
             .Include<LevelPosition>()
             .Include<LevelMover>()
@@ -40,8 +34,7 @@ public sealed class LevelMoverSystem : GameSystem
 
     public override void Update(Time time)
     {
-        var levelEntity = _level.Single();
-        ref var level = ref Registry.Get<Level>(levelEntity);
+        ref var level = ref Registry.Singleton<Level>();
 
         _completed.Clear();
         foreach (var entity in _movers)

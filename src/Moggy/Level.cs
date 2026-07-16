@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
 using Foster.Framework;
 using Moggy.Assets;
-using Moggy.Ecs;
 using Moggy.Mazegen;
 
 namespace Moggy;
@@ -140,8 +139,6 @@ public sealed class LevelSystem : GameSystem
 
     private const int CellSize = 16;
 
-    private Query _level = null!;
-
     private ImageAsset _wall = null!;
 
     public override void Startup()
@@ -150,8 +147,7 @@ public sealed class LevelSystem : GameSystem
             GenerateRegion(),
             new MazeGeneratorOptions());
 
-        var level = Registry.Create();
-        Registry.Set(level, new Level
+        Registry.Create(new Level
         {
             Maze = maze,
             CellWidth = CellSize,
@@ -159,15 +155,11 @@ public sealed class LevelSystem : GameSystem
         });
 
         _wall = Assets.Load<ImageAsset>("GridWall");
-        _level = Registry.Query()
-            .Include<Level>()
-            .Build();
     }
 
     public override void Render(Time time)
     {
-        var entity = _level.Single();
-        ref var level = ref Registry.Get<Level>(entity);
+        ref var level = ref Registry.Singleton<Level>();
 
         for (var row = 0; row < level.Rows; row++)
         {

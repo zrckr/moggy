@@ -21,20 +21,9 @@ public struct Viewport(int virtualWidth, int virtualHeight, RectInt contentBound
 
 public sealed class ViewportSystem : GameSystem
 {
-    private Query _viewport = null!;
-
-    public override void Startup()
-    {
-        _viewport = Registry.Query()
-            .Include<Viewport>()
-            .Build();
-    }
-
     public override void Update(Time time)
     {
-        var entity = _viewport.Single();
-
-        ref var viewport = ref Registry.Get<Viewport>(entity);
+        ref var viewport = ref Registry.Singleton<Viewport>();
         viewport.Scale = MathF.Floor(MathF.Min(
             App.Window.WidthInPixels / (float)viewport.VirtualWidth,
             App.Window.HeightInPixels / (float)viewport.VirtualHeight));
