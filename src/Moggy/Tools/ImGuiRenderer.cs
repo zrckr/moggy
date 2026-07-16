@@ -427,7 +427,7 @@ public class ImGuiRenderer : IDisposable
                     var textureIndex = cmd->TextureId.ToInt32();
                     if (textureIndex < _boundTextures.Count)
                     {
-                        _material.Fragment.Samplers[0] = new Material.BoundSampler(_boundTextures[textureIndex], new TextureSampler());
+                        _material.Fragment.Samplers[0] = new BoundSampler(_boundTextures[textureIndex], new TextureSampler());
                     }
 
                     pass.VertexOffset = (int)(cmd->VtxOffset + globalVtxOffset);
