@@ -11,14 +11,6 @@ public class Game : App
 {
     private static readonly ILogger Logger = Serilog.Log.ForContext<Game>();
 
-    private const int CellSize = 16;
-
-    private const int VirtualWidth = 240;
-
-    private const int VirtualHeight = 320;
-
-    private static readonly RectInt ViewportSize = new(0, CellSize * 2, VirtualWidth, VirtualHeight - CellSize * 3);
-
     private readonly List<GameSystem> _systems = new();
 
     private readonly Registry _registry = new();
@@ -74,9 +66,9 @@ public class Game : App
     protected override void Startup()
     {
         _view = _registry.Create();
-        _registry.Set(_view, new Viewport(VirtualWidth, VirtualHeight, ViewportSize));
+        _registry.Set(_view, new Viewport(Mathz.VirtualWidth, Mathz.VirtualHeight, Mathz.ViewportSize));
         _registry.Set(_view, new Camera(Vector2.Zero));
-        _screen = new Target(GraphicsDevice, VirtualWidth, VirtualHeight, "GameScreen");
+        _screen = new Target(GraphicsDevice, Mathz.VirtualWidth, Mathz.VirtualHeight, "GameScreen");
         _batcher = new Batcher(GraphicsDevice);
         _imgui = new ImGuiRenderer(this);
 
