@@ -61,16 +61,13 @@ public sealed class PlayerSystem : GameSystem
             {
                 Position = startCell
             },
-            new SpriteTransform
+            new Sprite
             {
-                Position = level.CellToCenter(startCell),
-                Scale = new Vector2(2f)
-            },
-            new AnimatedSprite
-            {
-                Animation = FaceDirection.Down.GetAnimationName(),
-                Sprite = _idleSprite
+                Asset = _idleSprite,
+                Transform = new Transform(level.CellToCenter(startCell), new Vector2(2f), 0f),
+                Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
             });
+
         Registry.SetTag<NavigationTarget>(player);
 
         _inputDevice = new VirtualDevice(App.Input, "Player");
@@ -82,8 +79,7 @@ public sealed class PlayerSystem : GameSystem
         _player = Registry.Query()
             .Include<Player>()
             .Include<LevelTransform>()
-            .Include<SpriteTransform>()
-            .Include<AnimatedSprite>()
+            .Include<Sprite>()
             .Build();
     }
 
@@ -93,7 +89,7 @@ public sealed class PlayerSystem : GameSystem
         ref var level = ref Registry.Singleton<Level>();
         ref var player = ref Registry.Get<Player>(playerEntity);
         ref var transform = ref Registry.Get<LevelTransform>(playerEntity);
-        ref var animated = ref Registry.Get<AnimatedSprite>(playerEntity);
+        ref var sprite = ref Registry.Get<Sprite>(playerEntity);
 
         if (Registry.Has<LevelMover>(playerEntity))
         {
@@ -103,7 +99,7 @@ public sealed class PlayerSystem : GameSystem
             }
 
             player.State = PlayerState.Move;
-            animated.Sprite = _moveSprite;
+            sprite.Asset = _moveSprite;
         }
         else
         {
@@ -113,16 +109,16 @@ public sealed class PlayerSystem : GameSystem
                 TryStartMove(playerEntity, in level, in transform, direction))
             {
                 player.State = PlayerState.Move;
-                animated.Sprite = _moveSprite;
+                sprite.Asset = _moveSprite;
             }
             else
             {
-                animated.Sprite = _idleSprite;
+                sprite.Asset = _idleSprite;
             }
         }
 
-        animated.Animation = player.Direction.GetAnimationName();
-        animated.FlipHorizontal = player.Direction.IsAnimationFlipped();
+        sprite.Animation.SetName(player.Direction.GetAnimationName());
+        sprite.FlipH = player.Direction.IsAnimationFlipped();
     }
 
     private bool TryStartMove(Entity entity, in Level level, in LevelTransform levelTransform, FaceDirection direction)

@@ -28,7 +28,7 @@ public sealed class LevelMoverSystem : GameSystem
         _movers = Registry.Query()
             .Include<LevelTransform>()
             .Include<LevelMover>()
-            .Include<SpriteTransform>()
+            .Include<Sprite>()
             .Build();
     }
 
@@ -41,7 +41,7 @@ public sealed class LevelMoverSystem : GameSystem
         {
             ref var levelTransform = ref Registry.Get<LevelTransform>(entity);
             ref var levelMover = ref Registry.Get<LevelMover>(entity);
-            ref var spriteTransform = ref Registry.Get<SpriteTransform>(entity);
+            ref var sprite = ref Registry.Get<Sprite>(entity);
 
             var from = level.CellToCenter(levelMover.From);
             var to = level.CellToCenter(levelMover.To);
@@ -50,12 +50,12 @@ public sealed class LevelMoverSystem : GameSystem
             if (levelMover.Progress >= 1f)
             {
                 levelTransform.Position = levelMover.To;
-                spriteTransform.Position = to;
+                sprite.Transform.Position = to;
                 _completed.Add(entity);
                 continue;
             }
 
-            spriteTransform.Position = Vector2.Lerp(from, to, levelMover.Progress);
+            sprite.Transform.Position = Vector2.Lerp(from, to, levelMover.Progress);
         }
 
         foreach (var entity in _completed)

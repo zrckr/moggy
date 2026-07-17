@@ -46,15 +46,11 @@ public sealed class EnemySystem : GameSystem
                 {
                     Position = startCell
                 },
-                new SpriteTransform
+                new Sprite
                 {
-                    Position = level.CellToCenter(startCell),
-                    Scale = new Vector2(2f)
-                },
-                new AnimatedSprite
-                {
-                    Animation = FaceDirection.Down.GetAnimationName(),
-                    Sprite = _moveSprite
+                    Asset= _moveSprite,
+                    Transform = new Transform(level.CellToCenter(startCell), new Vector2(2f), 0f),
+                    Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
                 });
         }
 
@@ -66,8 +62,7 @@ public sealed class EnemySystem : GameSystem
         _enemies = Registry.Query()
             .Include<Enemy>()
             .Include<LevelTransform>()
-            .Include<SpriteTransform>()
-            .Include<AnimatedSprite>()
+            .Include<Sprite>()
             .Build();
     }
 
@@ -84,7 +79,7 @@ public sealed class EnemySystem : GameSystem
         {
             ref var enemy = ref Registry.Get<Enemy>(entity);
             ref var transform = ref Registry.Get<LevelTransform>(entity);
-            ref var animated = ref Registry.Get<AnimatedSprite>(entity);
+            ref var sprite = ref Registry.Get<Sprite>(entity);
 
             if (!Registry.Has<LevelMover>(entity))
             {
@@ -102,8 +97,8 @@ public sealed class EnemySystem : GameSystem
                 }
             }
 
-            animated.Animation = enemy.Direction.GetAnimationName();
-            animated.FlipHorizontal = enemy.Direction.IsAnimationFlipped();
+            sprite.Animation.SetName(enemy.Direction.GetAnimationName());
+            sprite.FlipH = enemy.Direction.IsAnimationFlipped();
         }
     }
 

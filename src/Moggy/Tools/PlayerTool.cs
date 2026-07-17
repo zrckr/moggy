@@ -15,8 +15,7 @@ public sealed class PlayerTool : ToolSystem
         _player = Registry.Query()
             .Include<Player>()
             .Include<LevelTransform>()
-            .Include<SpriteTransform>()
-            .Include<AnimatedSprite>()
+            .Include<Sprite>()
             .Build();
     }
 
@@ -27,8 +26,7 @@ public sealed class PlayerTool : ToolSystem
         {
             ref var player = ref Registry.Get<Player>(entity);
             ref var levelTransform = ref Registry.Get<LevelTransform>(entity);
-            ref var spriteTransform = ref Registry.Get<SpriteTransform>(entity);
-            ref var sprite = ref Registry.Get<AnimatedSprite>(entity);
+            ref var sprite = ref Registry.Get<Sprite>(entity);
 
             ImGui.LabelText("Entity", entity.Id.ToString());
             ImGui.LabelText("State", player.State.ToString());
@@ -38,14 +36,16 @@ public sealed class PlayerTool : ToolSystem
 
             ImGui.SeparatorText("Movement");
             ImGui.LabelText("Cell", levelTransform.Position.ToString());
-            ImGui.LabelText("Position", spriteTransform.Position.ToString());
-            ImGui.LabelText("Scale", spriteTransform.Scale.ToString());
+            ImGui.LabelText("Position", sprite.Transform.Position.ToString());
+            ImGui.LabelText("Scale", sprite.Transform.Scale.ToString());
             ImGui.LabelText("Moving", Registry.Has<LevelMover>(entity).ToString());
 
-            ImGui.SeparatorText("Sprite");
-            ImGui.LabelText("Animation", sprite.Animation);
-            ImGui.LabelText("Frame", sprite.Frame.ToString());
-            ImGui.LabelText("Flip H", sprite.FlipHorizontal.ToString());
+            if (sprite.Animation is { } animation)
+            {
+                ImGui.SeparatorText("Animation");
+                ImGui.LabelText("Animation", animation.Name);
+                ImGui.LabelText("Frame", animation.Frame.ToString());
+            }
         }
 
         ImGui.End();

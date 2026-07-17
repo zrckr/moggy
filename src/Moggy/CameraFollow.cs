@@ -28,7 +28,7 @@ public sealed class CameraFollowSystem : GameSystem
 
         _player = Registry.Query()
             .Include<Player>()
-            .Include<SpriteTransform>()
+            .Include<Sprite>()
             .Build();
 
         var camera = _camera.Single();
@@ -48,44 +48,43 @@ public sealed class CameraFollowSystem : GameSystem
         EnsureFollowTarget(cameraEntity);
 
         ref var camera = ref Registry.Get<Camera>(cameraEntity);
-        ref var viewport = ref Registry.Get<Viewport>(cameraEntity);
         ref var follow = ref Registry.Get<CameraFollow>(cameraEntity);
-        ref var target = ref Registry.Get<SpriteTransform>(follow.Target);
 
         var halfDrag = follow.DragSize / (2f * camera.Zoom);
         var min = camera.Position - halfDrag;
         var max = camera.Position + halfDrag;
 
-        if (target.Position.X < min.X)
+        ref var sprite = ref Registry.Get<Sprite>(follow.Target);
+        var targetPosition = sprite.Transform.Position;
+        if (targetPosition.X < min.X)
         {
-            camera.Position.X = target.Position.X + halfDrag.X;
+            camera.Position.X = targetPosition.X + halfDrag.X;
         }
-        else if (target.Position.X > max.X)
+        else if (targetPosition.X > max.X)
         {
-            camera.Position.X = target.Position.X - halfDrag.X;
-        }
-
-        if (target.Position.Y < min.Y)
-        {
-            camera.Position.Y = target.Position.Y + halfDrag.Y;
-        }
-        else if (target.Position.Y > max.Y)
-        {
-            camera.Position.Y = target.Position.Y - halfDrag.Y;
+            camera.Position.X = targetPosition.X - halfDrag.X;
         }
 
+        if (targetPosition.Y < min.Y)
+        {
+            camera.Position.Y = targetPosition.Y + halfDrag.Y;
+        }
+        else if (targetPosition.Y > max.Y)
+        {
+            camera.Position.Y = targetPosition.Y - halfDrag.Y;
+        }
+
+        ref var viewport = ref Registry.Get<Viewport>(cameraEntity);
         ClampToLevelBounds(ref camera, in viewport);
     }
 
     private void EnsureFollowTarget(Entity camera)
     {
         ref var follow = ref Registry.Get<CameraFollow>(camera);
-        if (Registry.IsAlive(follow.Target) && Registry.Has<SpriteTransform>(follow.Target))
+        if (!Registry.IsAlive(follow.Target))
         {
-            return;
+            follow.Target = _player.Single();
         }
-
-        follow.Target = _player.Single();
     }
 
     private void ClampToLevelBounds(ref Camera camera, in Viewport viewport)
@@ -100,11 +99,8 @@ public sealed class CameraFollowSystem : GameSystem
 
     private static float ClampAxis(float position, float halfVisible, float halfGrid)
     {
-        if (halfVisible >= halfGrid)
-        {
-            return 0f;
-        }
-
-        return Math.Clamp(position, -halfGrid + halfVisible, halfGrid - halfVisible);
+        return halfVisible >= halfGrid
+            ? 0f
+            : Math.Clamp(position, -halfGrid + halfVisible, halfGrid - halfVisible);
     }
 }
