@@ -14,7 +14,7 @@ public sealed class EnemySystem : GameSystem
 {
     private const int EnemyCount = 4;
 
-    private const float CellMoveDuration = 0.2f;
+    private const float MovementSpeed = 4f;
 
     private const int SpawnSeed = 0;
 
@@ -213,8 +213,7 @@ public sealed class EnemySystem : GameSystem
         {
             From = from,
             To = targetCell,
-            Progress = 0f,
-            Speed = 1f / CellMoveDuration
+            Speed = MovementSpeed
         });
     }
 

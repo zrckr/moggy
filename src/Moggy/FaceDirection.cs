@@ -58,6 +58,15 @@ public static class FaceDirectionExtensions
         return null;
     }
 
+    public static FaceDirection? ToFaceDirection(this VirtualStick move)
+    {
+        if (move.PressedLeft) return FaceDirection.Left;
+        if (move.PressedRight) return FaceDirection.Right;
+        if (move.PressedUp) return FaceDirection.Up;
+        if (move.PressedDown) return FaceDirection.Down;
+        return null;
+    }
+
     public static string GetAnimationName(this FaceDirection faceDirection)
     {
         return faceDirection switch

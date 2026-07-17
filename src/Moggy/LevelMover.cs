@@ -9,12 +9,12 @@ public struct LevelTransform
     public Cell Position;
 }
 
-public struct LevelMover
+public struct LevelMover()
 {
-    public Cell From;
-    public Cell To;
-    public float Progress;
-    public float Speed;
+    public Cell From = default;
+    public Cell To = default;
+    public float Progress = 0f;
+    public float Speed = 0f;
 }
 
 public sealed class LevelMoverSystem : GameSystem

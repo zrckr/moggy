@@ -35,13 +35,13 @@ public struct Player()
 
 public sealed class PlayerSystem : GameSystem
 {
-    private const float CellMoveDuration = 0.15f;
+    private const float MovementSpeed = 8f;
 
     private Query _player = null!;
 
     private VirtualDevice _inputDevice = null!;
 
-    private VirtualStick _move = null!;
+    private VirtualStick _moveStick = null!;
 
     private SpriteAsset _idleSprite = null!;
 
@@ -72,8 +72,9 @@ public sealed class PlayerSystem : GameSystem
 
         _inputDevice = new VirtualDevice(App.Input, "Player");
         _inputDevice.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
-        _move = _inputDevice.AddStick("Move",
+        _moveStick = _inputDevice.AddStick("Move",
             new StickBindingSet()
+                .AddWasd()
                 .AddArrowKeys());
 
         _player = Registry.Query()
@@ -93,11 +94,7 @@ public sealed class PlayerSystem : GameSystem
 
         if (Registry.Has<LevelMover>(playerEntity))
         {
-            if (TryReadPressedDirection(out var pressed))
-            {
-                player.BufferedDirection = pressed;
-            }
-
+            player.BufferedDirection = _moveStick.ToFaceDirection();
             player.State = PlayerState.Move;
             sprite.Asset = _moveSprite;
         }
@@ -134,7 +131,7 @@ public sealed class PlayerSystem : GameSystem
             From = levelTransform.Position,
             To = target,
             Progress = 0f,
-            Speed = 1f / CellMoveDuration
+            Speed = MovementSpeed
         });
 
         return true;
@@ -146,70 +143,32 @@ public sealed class PlayerSystem : GameSystem
         in LevelTransform levelTransform,
         out FaceDirection direction)
     {
-        if (!TryReadBufferedOrHeldDirection(ref player, out var requested))
-        {
-            direction = default;
-            return false;
-        }
-
-        player.Direction = requested;
-        if (!level.IsWalkable(levelTransform.Position + requested))
-        {
-            direction = default;
-            return false;
-        }
-
-        direction = requested;
-        return true;
-    }
-
-    private bool TryReadBufferedOrHeldDirection(ref Player player, out FaceDirection direction)
-    {
+        FaceDirection? requested = null;
         if (player.BufferedDirection is { } buffered)
         {
             player.BufferedDirection = null;
-            direction = buffered;
-            return true;
+            requested = buffered;
         }
-
-        if (_move.Value.ToFaceDirection() is { } held)
+        else if (_moveStick.Value.ToFaceDirection() is { } held)
         {
-            direction = held;
-            return true;
+            requested = held;
         }
 
-        direction = default;
-        return false;
-    }
-
-    private bool TryReadPressedDirection(out FaceDirection direction)
-    {
-        if (_move.PressedLeft)
+        if (!requested.HasValue)
         {
-            direction = FaceDirection.Left;
-            return true;
+            direction = default;
+            return false;
         }
 
-        if (_move.PressedRight)
+        player.Direction = requested.Value;
+        if (!level.IsWalkable(levelTransform.Position + requested.Value))
         {
-            direction = FaceDirection.Right;
-            return true;
+            direction = default;
+            return false;
         }
 
-        if (_move.PressedUp)
-        {
-            direction = FaceDirection.Up;
-            return true;
-        }
-
-        if (_move.PressedDown)
-        {
-            direction = FaceDirection.Down;
-            return true;
-        }
-
-        direction = default;
-        return false;
+        direction = requested.Value;
+        return true;
     }
 
     public override void Shutdown()

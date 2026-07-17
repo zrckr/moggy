@@ -14,40 +14,40 @@ public readonly record struct Cell(int Column, int Row)
     }
 }
 
-public struct Level
+public readonly struct Level(Maze maze, int cellWidth, int cellHeight)
 {
-    public required Maze Maze;
+    public readonly Maze Maze = maze;
 
-    public required int CellWidth;
+    public readonly int CellWidth = cellWidth;
 
-    public required int CellHeight;
+    public readonly int CellHeight = cellHeight;
 
-    public readonly int Rows => Maze.Rows;
+    public int Rows => Maze.Rows;
 
-    public readonly int Columns => Maze.Columns;
+    public int Columns => Maze.Columns;
 
-    public readonly int Width => Columns * CellWidth;
+    public int Width => Columns * CellWidth;
 
-    public readonly int Height => Rows * CellHeight;
+    public int Height => Rows * CellHeight;
 
-    public readonly bool Contains(Cell cell)
+    public bool Contains(Cell cell)
     {
         return cell is { Row: >= 0, Column: >= 0 } &&
                cell.Column < Columns &&
                cell.Row < Rows;
     }
 
-    public readonly Tile GetTile(Cell cell)
+    public Tile GetTile(Cell cell)
     {
         return Maze[cell.Row, cell.Column];
     }
 
-    public readonly bool IsWalkable(Cell cell)
+    public bool IsWalkable(Cell cell)
     {
         return Contains(cell) && GetTile(cell) is Tile.Empty or Tile.Floor;
     }
 
-    public readonly bool TryRaycast(Cell origin, Cell target, out FaceDirection direction)
+    public bool TryRaycast(Cell origin, Cell target, out FaceDirection direction)
     {
         if (origin.Row == target.Row && origin.Column != target.Column)
         {
@@ -118,14 +118,14 @@ public struct Level
         return best;
     }
 
-    public readonly Vector2 CellToWorld(Cell cell)
+    public Vector2 CellToWorld(Cell cell)
     {
         return new Vector2(
             -Width / 2f + cell.Column * CellWidth,
             -Height / 2f + cell.Row * CellHeight);
     }
 
-    public readonly Vector2 CellToCenter(Cell cell)
+    public Vector2 CellToCenter(Cell cell)
     {
         return CellToWorld(cell) + new Vector2(CellWidth, CellHeight) * 0.5f;
     }
@@ -147,12 +147,7 @@ public sealed class LevelSystem : GameSystem
             GenerateRegion(),
             new MazeGeneratorOptions());
 
-        Registry.Create(new Level
-        {
-            Maze = maze,
-            CellWidth = CellSize,
-            CellHeight = CellSize
-        });
+        Registry.Create(new Level(maze, CellSize, CellSize));
 
         _wall = Assets.Load<ImageAsset>("GridWall");
     }
