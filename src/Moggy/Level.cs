@@ -7,7 +7,7 @@ namespace Moggy;
 
 public readonly record struct Cell(int Column, int Row)
 {
-    public static Cell operator+(Cell cell, FaceDirection direction)
+    public static Cell operator +(Cell cell, FaceDirection direction)
     {
         var point2 = direction.ToPoint2();
         return new Cell(cell.Column + point2.X, cell.Row + point2.Y);
@@ -121,13 +121,13 @@ public readonly struct Level(Maze maze, int cellWidth, int cellHeight)
     public Vector2 CellToWorld(Cell cell)
     {
         return new Vector2(
-            -Width / 2f + cell.Column * CellWidth,
-            -Height / 2f + cell.Row * CellHeight);
+            (-Width / 2f) + (cell.Column * CellWidth),
+            (-Height / 2f) + (cell.Row * CellHeight));
     }
 
     public Vector2 CellToCenter(Cell cell)
     {
-        return CellToWorld(cell) + new Vector2(CellWidth, CellHeight) * 0.5f;
+        return CellToWorld(cell) + (new Vector2(CellWidth, CellHeight) * 0.5f);
     }
 }
 
@@ -164,6 +164,7 @@ public sealed class LevelSystem : GameSystem
                         {
                             Batcher.Image(_wall.Texture, level.CellToWorld(cell), Color.White);
                         }
+
                         break;
                 }
             }

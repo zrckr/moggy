@@ -26,7 +26,7 @@ public class GridTool : ToolSystem
 
         for (var x = 0; x <= viewport.VirtualWidth; x += CellSize)
         {
-            var screenX = screenOrigin.X + x * viewport.Scale;
+            var screenX = screenOrigin.X + (x * viewport.Scale);
             var start = new Vector2(screenX, screenOrigin.Y);
             var end = new Vector2(screenX, screenOrigin.Y + screenHeight);
 
@@ -35,7 +35,7 @@ public class GridTool : ToolSystem
 
         for (var y = 0; y <= viewport.VirtualHeight; y += CellSize)
         {
-            var screenY = screenOrigin.Y + y * viewport.Scale;
+            var screenY = screenOrigin.Y + (y * viewport.Scale);
             var start = new Vector2(screenOrigin.X, screenY);
             var end = new Vector2(screenOrigin.X + screenWidth, screenY);
 

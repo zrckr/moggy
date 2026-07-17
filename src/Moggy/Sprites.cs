@@ -192,12 +192,19 @@ public sealed class SpriteSystem : GameSystem
     {
         var origin = frame.Subtexture.Size * 0.5f;
         var scale = transform.Scale;
-        if (flipH) scale.X *= -1;
-        if (flipV) scale.Y *= -1;
+        if (flipH)
+        {
+            scale.X *= -1;
+        }
+
+        if (flipV)
+        {
+            scale.Y *= -1;
+        }
 
         // Snap the position
-        var topLeft = transform.Position + offset - origin * scale;
-        var position = new Vector2(MathF.Round(topLeft.X), MathF.Round(topLeft.Y)) + origin * scale;
+        var topLeft = transform.Position + offset - (origin * scale);
+        var position = new Vector2(MathF.Round(topLeft.X), MathF.Round(topLeft.Y)) + (origin * scale);
 
         Batcher.Image(frame.Subtexture, position, origin, scale, transform.Rotation, Color.White);
     }

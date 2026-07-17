@@ -51,19 +51,51 @@ public static class FaceDirectionExtensions
 
     public static FaceDirection? ToFaceDirection(this Vector2 vector)
     {
-        if (vector.X < 0f) return FaceDirection.Left;
-        if (vector.X > 0f) return FaceDirection.Right;
-        if (vector.Y < 0f) return FaceDirection.Up;
-        if (vector.Y > 0f) return FaceDirection.Down;
+        if (vector.X < 0f)
+        {
+            return FaceDirection.Left;
+        }
+
+        if (vector.X > 0f)
+        {
+            return FaceDirection.Right;
+        }
+
+        if (vector.Y < 0f)
+        {
+            return FaceDirection.Up;
+        }
+
+        if (vector.Y > 0f)
+        {
+            return FaceDirection.Down;
+        }
+
         return null;
     }
 
     public static FaceDirection? ToFaceDirection(this VirtualStick move)
     {
-        if (move.PressedLeft) return FaceDirection.Left;
-        if (move.PressedRight) return FaceDirection.Right;
-        if (move.PressedUp) return FaceDirection.Up;
-        if (move.PressedDown) return FaceDirection.Down;
+        if (move.PressedLeft)
+        {
+            return FaceDirection.Left;
+        }
+
+        if (move.PressedRight)
+        {
+            return FaceDirection.Right;
+        }
+
+        if (move.PressedUp)
+        {
+            return FaceDirection.Up;
+        }
+
+        if (move.PressedDown)
+        {
+            return FaceDirection.Down;
+        }
+
         return null;
     }
 

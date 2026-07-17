@@ -136,7 +136,8 @@ internal sealed class SpanningTreeBuilder
         _openGraph[chosen.Connection.First].Add(chosen.Connection.Second);
         _openGraph[chosen.Connection.Second].Add(chosen.Connection.First);
         _reached.Add(chosen.Connection.Second);
-        _entryDirection[chosen.Connection.Second] = _topology.SegmentDirection(chosen.Connection.Second, chosen.Connection.Segment);
+        _entryDirection[chosen.Connection.Second] =
+            _topology.SegmentDirection(chosen.Connection.Second, chosen.Connection.Segment);
         _straightRun[chosen.Connection.Second] = chosen.NextRun;
     }
 

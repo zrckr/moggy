@@ -36,12 +36,12 @@ public class AssetLoader : IDisposable
 
     public T Load<T>(string path) where T : AssetResource, new()
     {
-        return Load<T>(path, requireRegistration: true, normalizePath: null);
+        return Load<T>(path, true, null);
     }
 
     public T LoadJson<T>(string path)
     {
-        return Load<JsonAsset<T>>(path, requireRegistration: false, normalizePath: EnsureJsonPath).Value;
+        return Load<JsonAsset<T>>(path, false, EnsureJsonPath).Value;
     }
 
     public bool TryGet<T>(AssetId id, out T? asset) where T : AssetResource
@@ -76,7 +76,8 @@ public class AssetLoader : IDisposable
         _provider.Dispose();
     }
 
-    private T Load<T>(string path, bool requireRegistration, Func<string, string>? normalizePath) where T : AssetResource, new()
+    private T Load<T>(string path, bool requireRegistration, Func<string, string>? normalizePath)
+        where T : AssetResource, new()
     {
         PruneCollected();
         path = normalizePath?.Invoke(path) ?? path;

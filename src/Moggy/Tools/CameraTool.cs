@@ -45,11 +45,11 @@ public sealed class CameraTool : ToolSystem
         if (_showDragRect)
         {
             var center = viewport.ContentBounds.CenterF;
-            var min = center - follow.DragSize * 0.5f;
-            var max = center + follow.DragSize * 0.5f;
+            var min = center - (follow.DragSize * 0.5f);
+            var max = center + (follow.DragSize * 0.5f);
             var screenOffset = new Vector2(viewport.WindowBounds.X, viewport.WindowBounds.Y);
-            var screenMin = screenOffset + min * viewport.Scale;
-            var screenMax = screenOffset + max * viewport.Scale;
+            var screenMin = screenOffset + (min * viewport.Scale);
+            var screenMax = screenOffset + (max * viewport.Scale);
             ImGui.GetForegroundDrawList().AddRect(screenMin, screenMax, Color.Blue.ABGR);
         }
     }

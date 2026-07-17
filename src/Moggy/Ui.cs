@@ -10,7 +10,7 @@ public static class Ui
         public void InVirtualScreen(Action action)
         {
             // Draw in virtual screen coordinates instead of the scrolling world.
-            batcher.PushMatrix(Matrix3x2.Identity, relative: false);
+            batcher.PushMatrix(Matrix3x2.Identity, false);
             batcher.PushScissor(null);
             action();
             batcher.PopScissor();

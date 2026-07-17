@@ -477,7 +477,7 @@ public static class MazeGenerator
                 .Where(node => previous is null || node != previous.Value)
                 .ToArray();
 
-            if (current != leaf && graph[current].Count != 2 || onward.Length == 0)
+            if ((current != leaf && graph[current].Count != 2) || onward.Length == 0)
             {
                 return depth;
             }

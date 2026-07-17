@@ -6,7 +6,7 @@ using Serilog.Templates.Themes;
 
 namespace Moggy;
 
-static class Logging
+internal static class Logging
 {
     private const string LogTemplate =
         "({UtcDateTime(@t):HH:mm:ss.fff}) {@l:u4} [{Substring(SourceContext, LastIndexOf(SourceContext, '.') + 1)}] {@m}\n{@x}";
@@ -43,15 +43,15 @@ static class Logging
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Is(Level)
-            .WriteTo.Console(formatter: new ExpressionTemplate(LogTemplate, theme: TemplateTheme.Literate))
-            .WriteTo.File(formatter: new ExpressionTemplate(LogTemplate), path: logFile)
+            .WriteTo.Console(new ExpressionTemplate(LogTemplate, theme: TemplateTheme.Literate))
+            .WriteTo.File(new ExpressionTemplate(LogTemplate), logFile)
             .CreateLogger();
 
         var logger = Log.ForContext<Game>();
         Foster.Framework.Log.SetCallbacks(
-             message => logger.Information("{FosterMessage:l}", message.ToString()),
-             message => logger.Warning("{FosterMessage:l}", message.ToString()),
-             message => logger.Error("{FosterMessage:l}", message.ToString())
+            message => logger.Information("{FosterMessage:l}", message.ToString()),
+            message => logger.Warning("{FosterMessage:l}", message.ToString()),
+            message => logger.Error("{FosterMessage:l}", message.ToString())
         );
     }
 }

@@ -59,7 +59,7 @@ public abstract class AssetProvider : IDisposable
         using (stream)
         {
             value = JsonSerializer.Deserialize<T>(stream, JsonOptions)
-                ?? throw new InvalidOperationException($"JSON asset '{path}' could not be deserialized.");
+                    ?? throw new InvalidOperationException($"JSON asset '{path}' could not be deserialized.");
         }
 
         return true;

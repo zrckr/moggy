@@ -12,5 +12,5 @@ public static class Mathz
 
     public const int VirtualHeight = TileSize * 40;
 
-    public static readonly RectInt ViewportSize = new(0, CellSize * 2, VirtualWidth, VirtualHeight - CellSize * 3);
+    public static readonly RectInt ViewportSize = new(0, CellSize * 2, VirtualWidth, VirtualHeight - (CellSize * 3));
 }

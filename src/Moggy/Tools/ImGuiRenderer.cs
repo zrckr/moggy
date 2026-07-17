@@ -113,7 +113,7 @@ public class ImGuiRenderer : IDisposable
         (ImGuiKey.KeypadSubtract, Foster.Framework.Keys.KeypadMinus),
         (ImGuiKey.KeypadAdd, Foster.Framework.Keys.KeypadPlus),
         (ImGuiKey.KeypadEnter, Foster.Framework.Keys.KeypadEnter),
-        (ImGuiKey.KeypadEqual, Foster.Framework.Keys.KeypadEquals),
+        (ImGuiKey.KeypadEqual, Foster.Framework.Keys.KeypadEquals)
     };
 
     private readonly App _app;
@@ -245,7 +245,7 @@ public class ImGuiRenderer : IDisposable
 
         if (_app.Input.Keyboard.Text.Length > 0)
         {
-            for (int i = 0; i < _app.Input.Keyboard.Text.Length; i++)
+            for (var i = 0; i < _app.Input.Keyboard.Text.Length; i++)
             {
                 io.AddInputCharacter(_app.Input.Keyboard.Text[i]);
             }
@@ -419,7 +419,7 @@ public class ImGuiRenderer : IDisposable
                     var batchIndex = cmd->UserCallback.ToInt32() - 1;
                     if (batchIndex >= 0 && batchIndex < _batchersUsed.Count)
                     {
-                        _batchersUsed[batchIndex].Render(_app.Window, viewport: null, scissor: scissor);
+                        _batchersUsed[batchIndex].Render(_app.Window, null, scissor);
                     }
                 }
                 else
@@ -427,7 +427,8 @@ public class ImGuiRenderer : IDisposable
                     var textureIndex = cmd->TextureId.ToInt32();
                     if (textureIndex < _boundTextures.Count)
                     {
-                        _material.Fragment.Samplers[0] = new BoundSampler(_boundTextures[textureIndex], new TextureSampler());
+                        _material.Fragment.Samplers[0] =
+                            new BoundSampler(_boundTextures[textureIndex], new TextureSampler());
                     }
 
                     pass.VertexOffset = (int)(cmd->VtxOffset + globalVtxOffset);

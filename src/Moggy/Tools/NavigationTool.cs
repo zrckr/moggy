@@ -117,6 +117,6 @@ public sealed class NavigationTool : ToolSystem
     {
         var virtualPosition = Vector2.Transform(level.CellToCenter(cell), camera.WorldToVirtual);
         var windowOrigin = new Vector2(viewport.WindowBounds.X, viewport.WindowBounds.Y);
-        return windowOrigin + virtualPosition * viewport.Scale;
+        return windowOrigin + (virtualPosition * viewport.Scale);
     }
 }

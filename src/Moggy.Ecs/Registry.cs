@@ -259,7 +259,8 @@ public sealed class Registry
         EnsureAlive(entity);
         if (IsTag<T>())
         {
-            throw new InvalidOperationException($"Tag component {typeof(T)} cannot be set with {nameof(Set)}. Use {nameof(SetTag)} instead.");
+            throw new InvalidOperationException(
+                $"Tag component {typeof(T)} cannot be set with {nameof(Set)}. Use {nameof(SetTag)} instead.");
         }
 
         var componentStorage = (ComponentStorage<T>)GetOrCreateStorage<T>();
@@ -300,7 +301,8 @@ public sealed class Registry
         EnsureAlive(entity);
         if (IsTag<T>())
         {
-            throw new InvalidOperationException($"Tag component {typeof(T)} cannot be set with {nameof(SetDeferred)}. Use {nameof(SetTagDeferred)} instead.");
+            throw new InvalidOperationException(
+                $"Tag component {typeof(T)} cannot be set with {nameof(SetDeferred)}. Use {nameof(SetTagDeferred)} instead.");
         }
 
         EnsureEnumerating();
@@ -316,7 +318,8 @@ public sealed class Registry
         EnsureAlive(entity);
         if (!IsTag<T>())
         {
-            throw new InvalidOperationException($"Component {typeof(T)} is not a tag. Use {nameof(SetDeferred)} instead.");
+            throw new InvalidOperationException(
+                $"Component {typeof(T)} is not a tag. Use {nameof(SetDeferred)} instead.");
         }
 
         EnsureEnumerating();
@@ -455,7 +458,8 @@ public sealed class Registry
     {
         if (_activeEnumerators == 0)
         {
-            throw new InvalidOperationException("Deferred component changes can only be scheduled while a query is being enumerated.");
+            throw new InvalidOperationException(
+                "Deferred component changes can only be scheduled while a query is being enumerated.");
         }
     }
 

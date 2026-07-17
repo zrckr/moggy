@@ -24,6 +24,6 @@ public sealed class JsonAsset<T> : AssetResource
     public override void Load(AssetLoadContext context, Stream stream)
     {
         Value = JsonSerializer.Deserialize<T>(stream, _jsonOptions)
-            ?? throw new InvalidOperationException($"JSON asset '{Name}' could not be deserialized.");
+                ?? throw new InvalidOperationException($"JSON asset '{Name}' could not be deserialized.");
     }
 }

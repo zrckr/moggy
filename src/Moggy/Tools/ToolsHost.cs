@@ -54,7 +54,7 @@ public sealed class ToolsHost
         {
             App = _app,
             Registry = _registry,
-            Assets = _assets,
+            Assets = _assets
         };
 
         _tools.Add(tool);
