@@ -5,8 +5,6 @@ namespace Moggy.Ecs;
 /// </summary>
 internal sealed class TagStorage<T> : IComponentStorage where T : struct
 {
-    public Type ComponentType => typeof(T);
-
     public int Count => _storage.Count;
 
     private readonly EntityStorage _storage = new();

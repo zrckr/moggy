@@ -7,8 +7,6 @@ namespace Moggy.Ecs;
 /// </summary>
 internal sealed class ComponentStorage<T> : IComponentStorage where T : struct
 {
-    public Type ComponentType => typeof(T);
-
     public int Count => _dense.Count;
 
     private readonly List<ComponentEntity<T>> _dense = new();

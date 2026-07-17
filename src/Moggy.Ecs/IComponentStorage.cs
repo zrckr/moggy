@@ -5,9 +5,5 @@
 /// </summary>
 internal interface IComponentStorage : IEntitySource
 {
-    Type ComponentType { get; }
-
     bool Remove(Entity entity);
-
-    void Clear();
 }
