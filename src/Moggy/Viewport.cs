@@ -21,19 +21,19 @@ public struct Viewport(int virtualWidth, int virtualHeight, RectInt contentBound
 
 public sealed class ViewportSystem : GameSystem
 {
-    public override void Update(Time time)
+    public override void Render(Time time)
     {
         ref var viewport = ref Registry.Singleton<Viewport>();
         viewport.Scale = MathF.Floor(MathF.Min(
-            App.Window.WidthInPixels / (float)viewport.VirtualWidth,
-            App.Window.HeightInPixels / (float)viewport.VirtualHeight));
+            Game.Window.WidthInPixels / (float)viewport.VirtualWidth,
+            Game.Window.HeightInPixels / (float)viewport.VirtualHeight));
         viewport.Scale = MathF.Max(1, viewport.Scale);
 
         var width = (int)(viewport.VirtualWidth * viewport.Scale);
         var height = (int)(viewport.VirtualHeight * viewport.Scale);
         viewport.WindowBounds = new RectInt(
-            (App.Window.WidthInPixels - width) / 2,
-            (App.Window.HeightInPixels - height) / 2,
+            (Game.Window.WidthInPixels - width) / 2,
+            (Game.Window.HeightInPixels - height) / 2,
             width,
             height);
     }

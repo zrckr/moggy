@@ -6,7 +6,7 @@ namespace Moggy;
 
 public abstract class GameSystem
 {
-    public App App { protected get; init; } = null!;
+    public Game Game { protected get; init; } = null!;
 
     public Registry Registry { protected get; init; } = null!;
 

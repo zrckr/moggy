@@ -70,7 +70,7 @@ public sealed class PlayerSystem : GameSystem
 
         Registry.SetTag<NavigationTarget>(player);
 
-        _inputDevice = new VirtualDevice(App.Input, "Player");
+        _inputDevice = new VirtualDevice(Game.Input, "Player");
         _inputDevice.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
         _moveStick = _inputDevice.AddStick("Move",
             new StickBindingSet()

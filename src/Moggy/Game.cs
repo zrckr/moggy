@@ -7,9 +7,17 @@ using Serilog;
 
 namespace Moggy;
 
+public enum GameState
+{
+    Active,
+    Paused
+}
+
 public class Game : App
 {
     private static readonly ILogger Logger = Serilog.Log.ForContext<Game>();
+
+    public GameState State { get; private set; } = GameState.Paused;
 
     private readonly List<GameSystem> _systems = new();
 
@@ -89,9 +97,17 @@ public class Game : App
 
     protected override void Update()
     {
-        foreach (var system in _systems)
+        if (Input.Keyboard.Pressed(Keys.Escape))
         {
-            system.Update(Time);
+            State = State == GameState.Paused ? GameState.Active : GameState.Paused;
+        }
+
+        if (State == GameState.Active)
+        {
+            foreach (var system in _systems)
+            {
+                system.Update(Time);
+            }
         }
     }
 
@@ -148,7 +164,7 @@ public class Game : App
     {
         var system = new T
         {
-            App = this,
+            Game = this,
             Registry = _registry,
             Assets = _assets,
             Batcher = _batcher

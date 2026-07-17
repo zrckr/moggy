@@ -17,7 +17,7 @@ public struct Camera(Vector2 position)
 
 public sealed class CameraSystem : GameSystem
 {
-    public override void Update(Time time)
+    public override void Render(Time time)
     {
         ref var camera = ref Registry.Singleton<Camera>();
         ref var viewport = ref Registry.Singleton<Viewport>();
