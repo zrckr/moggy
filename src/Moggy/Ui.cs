@@ -1,9 +1,9 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Foster.Framework;
 
 namespace Moggy;
 
-public static class BatcherExtensions
+public static class Ui
 {
     extension(Batcher batcher)
     {

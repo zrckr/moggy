@@ -22,7 +22,7 @@ internal sealed class SpanningTreeBuilder
 
     private readonly PieceTopology _topology;
 
-    private readonly MazeGeneratorOptions _options;
+    private readonly MazeDefinition _options;
 
     private readonly Random _random;
 
@@ -38,7 +38,7 @@ internal sealed class SpanningTreeBuilder
 
     private readonly List<PieceConnection> _connections = [];
 
-    public SpanningTreeBuilder(PieceTopology topology, MazeGeneratorOptions options, Random random)
+    public SpanningTreeBuilder(PieceTopology topology, MazeDefinition options, Random random)
     {
         _topology = topology;
         _options = options;

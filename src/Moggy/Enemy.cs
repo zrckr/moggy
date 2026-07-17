@@ -8,16 +8,12 @@ namespace Moggy;
 public struct Enemy()
 {
     public FaceDirection Direction = FaceDirection.Down;
+
+    public float MovementSpeed;
 }
 
 public sealed class EnemySystem : GameSystem
 {
-    private const int EnemyCount = 4;
-
-    private const float MovementSpeed = 4f;
-
-    private const int SpawnSeed = 0;
-
     private Query _enemies = null!;
 
     private Query _target = null!;
@@ -28,27 +24,25 @@ public sealed class EnemySystem : GameSystem
 
     public override void Startup()
     {
-        _moveSprite = Assets.Load<SpriteAsset>("Divil/Move");
-
         ref var level = ref Registry.Singleton<Level>();
 
-        var random = new Random(SpawnSeed);
+        var definition = Assets.LoadJson<EnemyDefinition>("Divil/Definition");
         var spawnCells = new HashSet<Cell>();
-        for (var i = 0; i < EnemyCount; i++)
+        _moveSprite = Assets.Load<SpriteAsset>(definition.MoveSprite);
+        var random = new Random(definition.SpawnSeed);
+
+        for (var i = 0; i < definition.Count; i++)
         {
             var origin = new Cell(random.Next(level.Columns), random.Next(level.Rows));
             var startCell = FindNearestUnclaimedWalkableCell(in level, origin, spawnCells);
             spawnCells.Add(startCell);
 
             Registry.Create(
-                new Enemy(),
-                new LevelTransform
-                {
-                    Position = startCell
-                },
+                new Enemy { MovementSpeed = definition.MovementSpeed },
+                new LevelTransform { Position = startCell },
                 new Sprite
                 {
-                    Asset= _moveSprite,
+                    Asset = _moveSprite,
                     Transform = new Transform(level.CellToCenter(startCell), new Vector2(2f), 0f),
                     Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
                 });
@@ -213,7 +207,7 @@ public sealed class EnemySystem : GameSystem
         {
             From = from,
             To = targetCell,
-            Speed = MovementSpeed
+            Speed = enemy.MovementSpeed
         });
     }
 
@@ -234,6 +228,11 @@ public sealed class EnemySystem : GameSystem
             ref var mover = ref Registry.Get<LevelMover>(entity);
             _claimedCells.Add(mover.To);
         }
+    }
+
+    public override void Shutdown()
+    {
+        _moveSprite.Dispose();
     }
 
     private static Cell FindNearestUnclaimedWalkableCell(

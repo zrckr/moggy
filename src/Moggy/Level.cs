@@ -133,21 +133,16 @@ public readonly struct Level(Maze maze, int cellWidth, int cellHeight)
 
 public sealed class LevelSystem : GameSystem
 {
-    private const int TilingRows = 10;
-
-    private const int TilingColumns = 10;
-
-    private const int CellSize = 16;
-
     private ImageAsset _wall = null!;
 
     public override void Startup()
     {
+        var definition = Assets.LoadJson<LevelDefinition>("LevelDefinition");
         var maze = MazeGenerator.Generate(
-            GenerateRegion(),
-            new MazeGeneratorOptions());
+            GenerateRegion(definition.TilingRows, definition.TilingColumns),
+            Assets.LoadJson<MazeDefinition>("MazeDefinition"));
 
-        Registry.Create(new Level(maze, CellSize, CellSize));
+        Registry.Create(new Level(maze, definition.CellSize, definition.CellSize));
 
         _wall = Assets.Load<ImageAsset>("GridWall");
     }
@@ -180,12 +175,12 @@ public sealed class LevelSystem : GameSystem
         _wall.Dispose();
     }
 
-    private static IReadOnlyCollection<Point2> GenerateRegion()
+    private static IReadOnlyCollection<Point2> GenerateRegion(int tilingRows, int tilingColumns)
     {
         var region = new List<Point2>();
-        for (var row = 0; row < TilingRows; row++)
+        for (var row = 0; row < tilingRows; row++)
         {
-            for (var column = 0; column < TilingColumns; column++)
+            for (var column = 0; column < tilingColumns; column++)
             {
                 region.Add(new Point2(row, column));
             }

@@ -1,0 +1,13 @@
+﻿{
+  "TilingRows": 10,
+  "TilingColumns": 10,
+  "CellSize": 16,
+  "Seed": 17,
+  "Erosion": 0.33333334,
+  "Exits": 4,
+  "MaxHallway": 3,
+  "MaxDeadEnd": 3,
+  "MaxRepairs": 12,
+  "ExtraLoops": 0,
+  "Temperature": 0.6
+}

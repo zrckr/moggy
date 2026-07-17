@@ -1,0 +1,5 @@
+﻿{
+  "MovementSpeed": 8.0,
+  "IdleSprite": "Player/Idle",
+  "MoveSprite": "Player/Move"
+}

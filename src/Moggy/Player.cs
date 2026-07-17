@@ -35,8 +35,6 @@ public struct Player()
 
 public sealed class PlayerSystem : GameSystem
 {
-    private const float MovementSpeed = 8f;
-
     private Query _player = null!;
 
     private VirtualDevice _inputDevice = null!;
@@ -47,10 +45,13 @@ public sealed class PlayerSystem : GameSystem
 
     private SpriteAsset _moveSprite = null!;
 
+    private PlayerDefinition _definition = null!;
+
     public override void Startup()
     {
-        _idleSprite = Assets.Load<SpriteAsset>("Player/Idle");
-        _moveSprite = Assets.Load<SpriteAsset>("Player/Move");
+        _definition = Assets.LoadJson<PlayerDefinition>("Player/Definition");
+        _idleSprite = Assets.Load<SpriteAsset>(_definition.IdleSprite);
+        _moveSprite = Assets.Load<SpriteAsset>(_definition.MoveSprite);
 
         ref var level = ref Registry.Singleton<Level>();
         var startCell = level.FindNearestWalkableCell(new Cell(level.Columns / 2, level.Rows / 2));
@@ -131,7 +132,7 @@ public sealed class PlayerSystem : GameSystem
             From = levelTransform.Position,
             To = target,
             Progress = 0f,
-            Speed = MovementSpeed
+            Speed = _definition.MovementSpeed
         });
 
         return true;
