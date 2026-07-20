@@ -22,11 +22,6 @@ public sealed class PerformanceTool : ToolSystem
 
     private float _averageDelta;
 
-    public PerformanceTool()
-    {
-        IsOpen = true;
-    }
-
     public override void Draw(Time time)
     {
         if (_averageDelta <= 0f)

@@ -1,6 +1,5 @@
 using System.Numerics;
 using Foster.Framework;
-using Moggy.Ecs;
 
 namespace Moggy;
 

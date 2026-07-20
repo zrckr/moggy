@@ -29,7 +29,19 @@ public sealed class ToolsHost
 
     public void Draw(Time time)
     {
-        if (ImGui.BeginMainMenuBar())
+        var menuBarHeight = ImGui.GetFrameHeight();
+        var mousePosition = ImGui.GetMousePos();
+        var displaySize = ImGui.GetIO().DisplaySize;
+
+        // Use the menu height as an activation band without reserving viewport space.
+        var pointerInMenuBarRegion = mousePosition.X >= 0f &&
+                                     mousePosition.X < displaySize.X &&
+                                     mousePosition.Y >= 0f &&
+                                     mousePosition.Y < menuBarHeight;
+        var menuOpen = ImGui.IsPopupOpen(string.Empty, ImGuiPopupFlags.AnyPopupId);
+        var menuBarVisible = pointerInMenuBarRegion || menuOpen;
+
+        if (menuBarVisible && ImGui.BeginMainMenuBar())
         {
             foreach (var tool in _tools)
             {

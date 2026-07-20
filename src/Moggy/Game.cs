@@ -137,8 +137,14 @@ public class Game : App
         Window.Clear(new Color(0.2f, 0.2f, 0.294f, 1f));
 
         _batcher.PushSampler(new TextureSampler(TextureFilter.Nearest, TextureWrap.Clamp, TextureWrap.Clamp));
-        _batcher.Image(_screen, viewport.WindowBounds.CenterF, viewport.Origin, Vector2.One * viewport.Scale, 0,
-            Color.White);
+        _batcher.Image(
+            texture: _screen,
+            position: viewport.WindowBounds.CenterF,
+            origin: viewport.Origin,
+            scale: Vector2.One * viewport.Scale,
+            rotation: 0,
+            color: Color.White
+        );
         _batcher.PopSampler();
 
         _batcher.Render(Window);
