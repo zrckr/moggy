@@ -13,6 +13,7 @@ public enum GameState
 public struct GameRuntime()
 {
     public GameState State = GameState.Level;
+    public GameState? NextState;
     public bool IsPaused = true; // TODO: Debug only
 }
 
@@ -54,9 +55,19 @@ public sealed class GameRuntimeSystem : GameSystem
 
     private void UpdateScoreState()
     {
+        ref var runtime = ref Registry.Singleton<GameRuntime>();
+        if (Game.Input.Keyboard.Pressed(Keys.Enter))
+        {
+            runtime.NextState = GameState.Level;
+        }
     }
 
     private void UpdateMenuState()
     {
+        ref var runtime = ref Registry.Singleton<GameRuntime>();
+        if (Game.Input.Keyboard.Pressed(Keys.Enter))
+        {
+            runtime.NextState = GameState.Level;
+        }
     }
 }

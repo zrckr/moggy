@@ -48,6 +48,12 @@ public sealed class EnemySystem : GameSystem, ILevelParticipant
 
     public override void Update(Time time)
     {
+        ref var game = ref Registry.Singleton<GameRuntime>();
+        if (game.State != GameState.Level)
+        {
+            return;
+        }
+
         ref var level = ref Registry.Singleton<Level>();
         ref var navigation = ref Registry.Singleton<Navigation>();
         ref var levelTransform = ref Registry.Get<LevelTransform>(_target.Single());

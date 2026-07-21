@@ -176,6 +176,12 @@ public sealed class LevelSystem : GameSystem, ILevelParticipant
 
     public override void Render(Time time)
     {
+        ref var game = ref Registry.Singleton<GameRuntime>();
+        if (game.State != GameState.Level)
+        {
+            return;
+        }
+
         ref var level = ref Registry.Singleton<Level>();
 
         for (var row = 0; row < level.Rows; row++)

@@ -117,11 +117,31 @@ public class Game : App
             return;
         }
 
-        if (!game.IsPaused)
+        if (game is { State: GameState.Level, IsPaused: false })
         {
+            var previousState = game.State;
             foreach (var system in _systems)
             {
                 system.Update(Time);
+            }
+
+            // Apply lifecycle changes after systems finish processing the current state.
+            if (game.NextState is { } nextState)
+            {
+                game.NextState = null;
+                if (previousState != nextState)
+                {
+                    if (previousState == GameState.Level)
+                    {
+                        ExitLevel();
+                    }
+
+                    game.State = nextState;
+                    if (nextState == GameState.Level)
+                    {
+                        EnterLevel(LevelStartMode.Restart);
+                    }
+                }
             }
         }
     }

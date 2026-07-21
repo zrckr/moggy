@@ -19,13 +19,19 @@ public sealed class HudSystem : GameSystem
 
     public override void Render(Time time)
     {
+        ref var game = ref Registry.Singleton<GameRuntime>();
+        if (game.State != GameState.Level)
+        {
+            return;
+        }
+
+        var isPaused = game.IsPaused;
         Batcher.InVirtualScreen(() =>
         {
             Batcher.TextMonospaced(_font.Sprite, PlayerOneLabel, Layout.PlayerOnePosition, Layout.PlayerOneColor);
             Batcher.TextMonospaced(_font.Sprite, Score, Layout.PlayerOneScorePosition, Color.White);
 
-            ref var game = ref Registry.Singleton<GameRuntime>();
-            if (game.IsPaused)
+            if (isPaused)
             {
                 Batcher.TextMonospaced(_font.Sprite, "PAUSED", Layout.PausedPosition, Color.Red);
             }

@@ -35,6 +35,12 @@ public sealed class CameraFollowSystem : GameSystem, ILevelParticipant
 
     public override void Update(Time time)
     {
+        ref var game = ref Registry.Singleton<GameRuntime>();
+        if (game.State != GameState.Level)
+        {
+            return;
+        }
+
         var cameraEntity = _camera.Single();
         EnsureFollowTarget(cameraEntity);
 

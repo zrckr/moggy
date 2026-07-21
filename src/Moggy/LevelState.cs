@@ -16,15 +16,17 @@ public struct LevelRuntime()
     public LevelState State = LevelState.Ready;
     public int Lives = 0;
     public int Score = 0;
-    public int ObjectiveProgress = 0;   // Score Attack
 }
 
 public sealed class LevelRuntimeSystem : GameSystem, ILevelParticipant
 {
     private static readonly ILogger Logger = Serilog.Log.ForContext<LevelRuntimeSystem>();
 
+    private LevelProperties _properties = null!;
+
     public override void Startup()
     {
+        _properties = Assets.LoadJson<LevelProperties>("LevelProperties");
         Registry.Create(new LevelRuntime());
     }
 
@@ -32,17 +34,18 @@ public sealed class LevelRuntimeSystem : GameSystem, ILevelParticipant
     {
         ref var runtime = ref Registry.Singleton<LevelRuntime>();
         runtime.State = LevelState.Ready;
-        runtime.Lives = 0;
+        runtime.Lives = _properties.StartingLives;
         runtime.Score = 0;
-        runtime.ObjectiveProgress = 0;
-    }
-
-    public void ExitLevel()
-    {
     }
 
     public override void Update(Time time)
     {
+        ref var game = ref Registry.Singleton<GameRuntime>();
+        if (game.State != GameState.Level)
+        {
+            return;
+        }
+
         ref var runtime = ref Registry.Singleton<LevelRuntime>();
         switch (runtime.State)
         {
@@ -70,14 +73,32 @@ public sealed class LevelRuntimeSystem : GameSystem, ILevelParticipant
 
     private void UpdateReadyState()
     {
+        ref var runtime = ref Registry.Singleton<LevelRuntime>();
+        if (Game.Input.Keyboard.Pressed(Keys.Enter))
+        {
+            runtime.State = LevelState.Active;
+        }
     }
 
     private void UpdateActiveState()
     {
+        ref var runtime = ref Registry.Singleton<LevelRuntime>();
+        if (runtime.Score >= _properties.TargetScore)
+        {
+            runtime.State = LevelState.Victory;
+            return;
+        }
+
+        if (runtime.Lives <= 0)
+        {
+            runtime.State = LevelState.Defeat;
+        }
     }
 
     private void UpdateVictoryState()
     {
+        ref var game = ref Registry.Singleton<GameRuntime>();
+        game.NextState = GameState.Score;
     }
 
     private void UpdateDefeatState()
@@ -93,7 +114,11 @@ public enum LevelStartMode
 
 public interface ILevelParticipant
 {
-    void EnterLevel(LevelStartMode mode);
+    void EnterLevel(LevelStartMode mode)
+    {
+    }
 
-    void ExitLevel();
+    void ExitLevel()
+    {
+    }
 }
