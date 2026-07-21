@@ -1,0 +1,11 @@
+﻿{
+  "AttentionMaxLevel": 4,
+  "AttentionThresholds": [],
+  "ChaosPerBug": 0,
+  "ChaosPerAbilityRoll": 0,
+  "ChaosComboMultiplier": 0,
+  "ChaosComboWindowSeconds": 0,
+  "ChaosDecayDelaySeconds": 0,
+  "ChaosDecayPerSecond": 0,
+  "ChaosRemovedPerStomp": 0,
+}

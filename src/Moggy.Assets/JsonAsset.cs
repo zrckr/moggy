@@ -9,6 +9,8 @@ public sealed class JsonAsset<T> : AssetResource
 {
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
         Converters =
         {
             new JsonStringEnumConverter(),

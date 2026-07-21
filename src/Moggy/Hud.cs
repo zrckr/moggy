@@ -1,6 +1,5 @@
 ﻿using System.Numerics;
 using Foster.Framework;
-using JetBrains.Annotations;
 using Moggy.Assets;
 
 namespace Moggy;
@@ -25,7 +24,8 @@ public sealed class HudSystem : GameSystem
             Batcher.TextMonospaced(_font.Sprite, PlayerOneLabel, Layout.PlayerOnePosition, Layout.PlayerOneColor);
             Batcher.TextMonospaced(_font.Sprite, Score, Layout.PlayerOneScorePosition, Color.White);
 
-            if (Game.State == GameState.Paused)
+            ref var game = ref Registry.Singleton<GameRuntime>();
+            if (game.IsPaused)
             {
                 Batcher.TextMonospaced(_font.Sprite, "PAUSED", Layout.PausedPosition, Color.Red);
             }

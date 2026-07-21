@@ -7,17 +7,9 @@ using Serilog;
 
 namespace Moggy;
 
-public enum GameState
-{
-    Active,
-    Paused
-}
-
 public class Game : App
 {
     private static readonly ILogger Logger = Serilog.Log.ForContext<Game>();
-
-    public GameState State { get; private set; } = GameState.Paused;
 
     private readonly List<GameSystem> _systems = new();
 
@@ -79,30 +71,40 @@ public class Game : App
         _screen = new Target(GraphicsDevice, Mathz.VirtualWidth, Mathz.VirtualHeight, "GameScreen");
         _batcher = new Batcher(GraphicsDevice);
         _imgui = new ImGuiRenderer(this);
-
         _assets = new AssetLoader(this);
-        RegisterSystem<ViewportSystem>();
-        RegisterSystem<LevelSystem>();
-        RegisterSystem<PlayerSystem>();
-        RegisterSystem<NavigationSystem>();
-        RegisterSystem<EnemySystem>();
-        RegisterSystem<LevelMoverSystem>();
-        RegisterSystem<CameraFollowSystem>();
-        RegisterSystem<CameraSystem>();
-        RegisterSystem<SpriteSystem>();
-        RegisterSystem<HudSystem>();
+
+        _systems.AddRange(
+            CreateSystem<GameRuntimeSystem>(),
+            CreateSystem<LevelRuntimeSystem>(),
+            CreateSystem<ViewportSystem>(),
+            CreateSystem<LevelSystem>(),
+            CreateSystem<PlayerSystem>(),
+            CreateSystem<NavigationSystem>(),
+            CreateSystem<EnemySystem>(),
+            CreateSystem<LevelMoverSystem>(),
+            CreateSystem<CameraFollowSystem>(),
+            CreateSystem<CameraSystem>(),
+            CreateSystem<SpriteSystem>(),
+            CreateSystem<HudSystem>()
+        );
+
+        foreach (var system in _systems)
+        {
+            system.Startup();
+        }
 
         _tools = new ToolsHost(this, _registry, _assets);
     }
 
     protected override void Update()
     {
+        ref var game = ref _registry.Singleton<GameRuntime>();
         if (Input.Keyboard.Pressed(Keys.Escape))
         {
-            State = State == GameState.Paused ? GameState.Active : GameState.Paused;
+            game.IsPaused = !game.IsPaused;
         }
 
-        if (State == GameState.Active)
+        if (!game.IsPaused)
         {
             foreach (var system in _systems)
             {
@@ -155,9 +157,9 @@ public class Game : App
 
     protected override void Shutdown()
     {
-        foreach (var system in _systems)
+        for (var index = _systems.Count - 1; index >= 0; index--)
         {
-            system.Shutdown();
+            _systems[index].Shutdown();
         }
 
         _systems.Clear();
@@ -167,17 +169,14 @@ public class Game : App
         _batcher.Dispose();
     }
 
-    private void RegisterSystem<T>() where T : GameSystem, new()
+    private T CreateSystem<T>() where T : GameSystem, new()
     {
-        var system = new T
+        return new T
         {
             Game = this,
             Registry = _registry,
             Assets = _assets,
             Batcher = _batcher
         };
-
-        _systems.Add(system);
-        system.Startup();
     }
 }
