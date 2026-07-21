@@ -6,6 +6,31 @@ using Moggy.Mazegen;
 
 namespace Moggy;
 
+public sealed record LevelProperties
+{
+    public int TilingRows { get; init; }
+
+    public int TilingColumns { get; init; }
+
+    public int CellSize { get; init; }
+
+    public int TargetScore { get; init; }
+
+    public int StartingLives { get; init; }
+
+    public int BugScore { get; init; }
+
+    public int EnemyScore { get; init; }
+
+    public float AbilityOdds { get; init; }
+
+    public TimeSpan BigBoyDuration { get; init; }
+
+    public TimeSpan MicroManDuration { get; init; }
+
+    public TimeSpan RespawnInvincibility { get; init; }
+}
+
 public readonly record struct Cell(int Column, int Row)
 {
     public static Cell operator +(Cell cell, FaceDirection direction)
@@ -134,9 +159,9 @@ public readonly struct Level(Maze maze, int cellWidth, int cellHeight)
 
 public sealed class LevelSystem : GameSystem, ILevelParticipant
 {
-    private LevelDefinition _definition = null!;
+    private LevelProperties _properties = null!;
 
-    private MazeDefinition _mazeDefinition = null!;
+    private MazeProperties _mazeProperties = null!;
 
     private ImageAsset _wall = null!;
 
@@ -144,8 +169,8 @@ public sealed class LevelSystem : GameSystem, ILevelParticipant
 
     public override void Startup()
     {
-        _definition = Assets.LoadJson<LevelDefinition>("LevelDefinition");
-        _mazeDefinition = Assets.LoadJson<MazeDefinition>("MazeDefinition");
+        _properties = Assets.LoadJson<LevelProperties>("LevelProperties");
+        _mazeProperties = Assets.LoadJson<MazeProperties>("MazeProperties");
         _wall = Assets.Load<ImageAsset>("GridWall");
     }
 
@@ -181,17 +206,17 @@ public sealed class LevelSystem : GameSystem, ILevelParticipant
     public void EnterLevel(LevelStartMode mode)
     {
         var region = new List<Point2>();
-        for (var row = 0; row < _definition.TilingRows; row++)
+        for (var row = 0; row < _properties.TilingRows; row++)
         {
-            for (var column = 0; column < _definition.TilingColumns; column++)
+            for (var column = 0; column < _properties.TilingColumns; column++)
             {
                 region.Add(new Point2(row, column));
             }
         }
 
-        var maze = MazeGenerator.Generate(region, _mazeDefinition);
+        var maze = MazeGenerator.Generate(region, _mazeProperties);
         _levelEntity = Registry.Create(
-            new Level(maze, _definition.CellSize, _definition.CellSize));
+            new Level(maze, _properties.CellSize, _properties.CellSize));
     }
 
     public void ExitLevel()

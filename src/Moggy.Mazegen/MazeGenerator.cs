@@ -2,7 +2,7 @@ using Foster.Framework;
 
 namespace Moggy.Mazegen;
 
-public sealed record MazeDefinition
+public sealed record MazeProperties
 {
     public int Seed { get; init; } = 17;
 
@@ -27,7 +27,7 @@ public static class MazeGenerator
 
     private const float DeadEndRepairBaseScore = 3f;
 
-    public static Maze Generate(IReadOnlyCollection<Point2> region, MazeDefinition options)
+    public static Maze Generate(IReadOnlyCollection<Point2> region, MazeProperties options)
     {
         var tiling = PentominoTiling.Generate(region, new Random(options.Seed));
         if (tiling.Count == 0)
@@ -41,7 +41,7 @@ public static class MazeGenerator
         return MazeMaterializer.Materialize(topology, walls);
     }
 
-    private static WallPlan GenerateWalls(PieceTopology topology, MazeDefinition options, int seed)
+    private static WallPlan GenerateWalls(PieceTopology topology, MazeProperties options, int seed)
     {
         // The maze is first built as a pentomino-piece graph, then converted into unit-cell walls.
         var random = new Random(seed);
@@ -67,7 +67,7 @@ public static class MazeGenerator
     private static List<PieceConnection> RepairLongDeadEnds(
         PieceTopology topology,
         IReadOnlyList<PieceConnection> connections,
-        MazeDefinition options,
+        MazeProperties options,
         Random random)
     {
         var repaired = connections.ToList();
@@ -186,7 +186,7 @@ public static class MazeGenerator
         PieceTopology topology,
         IReadOnlyList<PieceConnection> connections,
         IReadOnlyList<OuterWall> exits,
-        MazeDefinition options,
+        MazeProperties options,
         Random random)
     {
         // Wall arrays use true for closed walls and false for openings.

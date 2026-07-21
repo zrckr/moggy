@@ -5,6 +5,15 @@ using Moggy.Ecs;
 
 namespace Moggy;
 
+public sealed record PlayerProperties
+{
+    public float MovementSpeed { get; init; }
+
+    public string IdleSprite { get; init; } = string.Empty;
+
+    public string MoveSprite { get; init; } = string.Empty;
+}
+
 public enum PlayerState
 {
     Idle,
@@ -43,15 +52,15 @@ public sealed class PlayerSystem : GameSystem, ILevelParticipant
 
     private SpriteAsset _moveSprite = null!;
 
-    private PlayerDefinition _definition = null!;
+    private PlayerProperties _properties = null!;
 
     private Entity _playerEntity = Entity.Invalid;
 
     public override void Startup()
     {
-        _definition = Assets.LoadJson<PlayerDefinition>("Player/Definition");
-        _idleSprite = Assets.Load<SpriteAsset>(_definition.IdleSprite);
-        _moveSprite = Assets.Load<SpriteAsset>(_definition.MoveSprite);
+        _properties = Assets.LoadJson<PlayerProperties>("Player/Properties");
+        _idleSprite = Assets.Load<SpriteAsset>(_properties.IdleSprite);
+        _moveSprite = Assets.Load<SpriteAsset>(_properties.MoveSprite);
 
         _inputDevice = new VirtualDevice(Game.Input, "Player");
         _inputDevice.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
@@ -107,7 +116,7 @@ public sealed class PlayerSystem : GameSystem, ILevelParticipant
             From = levelTransform.Position,
             To = target,
             Progress = 0f,
-            Speed = _definition.MovementSpeed
+            Speed = _properties.MovementSpeed
         });
 
         return true;

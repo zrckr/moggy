@@ -5,6 +5,17 @@ using Moggy.Ecs;
 
 namespace Moggy;
 
+public sealed record EnemyProperties
+{
+    public int Count { get; init; }
+
+    public float MovementSpeed { get; init; }
+
+    public int SpawnSeed { get; init; }
+
+    public string MoveSprite { get; init; } = string.Empty;
+}
+
 public struct Enemy()
 {
     public FaceDirection Direction = FaceDirection.Down;
@@ -16,7 +27,7 @@ public sealed class EnemySystem : GameSystem, ILevelParticipant
 {
     private Query _target = null!;
 
-    private EnemyDefinition _definition = null!;
+    private EnemyProperties _properties = null!;
 
     private SpriteAsset _moveSprite = null!;
 
@@ -26,8 +37,8 @@ public sealed class EnemySystem : GameSystem, ILevelParticipant
 
     public override void Startup()
     {
-        _definition = Assets.LoadJson<EnemyDefinition>("Divil/Definition");
-        _moveSprite = Assets.Load<SpriteAsset>(_definition.MoveSprite);
+        _properties = Assets.LoadJson<EnemyProperties>("Enemy/Properties");
+        _moveSprite = Assets.Load<SpriteAsset>(_properties.MoveSprite);
 
         _target = Registry.Query()
             .Include<NavigationTarget>()
@@ -75,17 +86,17 @@ public sealed class EnemySystem : GameSystem, ILevelParticipant
     {
         ref var level = ref Registry.Singleton<Level>();
         var spawnCells = new HashSet<Cell>();
-        var random = new Random(_definition.SpawnSeed);
+        var random = new Random(_properties.SpawnSeed);
 
         _enemyEntities.Clear();
-        for (var index = 0; index < _definition.Count; index++)
+        for (var index = 0; index < _properties.Count; index++)
         {
             var origin = new Cell(random.Next(level.Columns), random.Next(level.Rows));
             var startCell = FindNearestUnclaimedWalkableCell(in level, origin, spawnCells);
             spawnCells.Add(startCell);
 
             var enemy = Registry.Create(
-                new Enemy { MovementSpeed = _definition.MovementSpeed },
+                new Enemy { MovementSpeed = _properties.MovementSpeed },
                 new LevelTransform { Position = startCell },
                 new Sprite
                 {

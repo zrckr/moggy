@@ -1,0 +1,7 @@
+﻿{
+  "Count": 12,
+  "MovementSpeed": 8.0,
+  "FleeDistance": 12.0,
+  "SpawnSeed": 0,
+  "MoveSprite": "Bug/Move"
+}

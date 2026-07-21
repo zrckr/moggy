@@ -1,0 +1,11 @@
+{
+  "AttentionMaxLevel": 4,
+  "AttentionThresholds": [100, 250, 450, 700],
+  "PerBug": 100,
+  "PerAbilityRoll": 150,
+  "ComboMultiplier": 2,
+  "ComboWindowSeconds": 3,
+  "DecayDelaySeconds": 4,
+  "DecayPerSecond": 25,
+  "RemovedPerStomp": 150
+}

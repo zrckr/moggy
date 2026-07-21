@@ -22,7 +22,7 @@ internal sealed class SpanningTreeBuilder
 
     private readonly PieceTopology _topology;
 
-    private readonly MazeDefinition _options;
+    private readonly MazeProperties _properties;
 
     private readonly Random _random;
 
@@ -38,10 +38,10 @@ internal sealed class SpanningTreeBuilder
 
     private readonly List<PieceConnection> _connections = [];
 
-    public SpanningTreeBuilder(PieceTopology topology, MazeDefinition options, Random random)
+    public SpanningTreeBuilder(PieceTopology topology, MazeProperties properties, Random random)
     {
         _topology = topology;
-        _options = options;
+        _properties = properties;
         _random = random;
         _fullGraph = topology.FullGraphCopy();
         _openGraph = Enumerable.Range(0, topology.PieceCount).ToDictionary(piece => piece, _ => new HashSet<int>());
@@ -61,11 +61,11 @@ internal sealed class SpanningTreeBuilder
             }
 
             var withinLimit = scoredEdges
-                .Where(item => item.NextRun <= _options.MaxHallway)
+                .Where(item => item.NextRun <= _properties.MaxHallway)
                 .ToArray();
             var chosen = WeightedChoice(
                 withinLimit.Length > 0 ? withinLimit : scoredEdges.ToArray(),
-                _options.Temperature);
+                _properties.Temperature);
 
             AddConnection(chosen);
         }
@@ -118,7 +118,7 @@ internal sealed class SpanningTreeBuilder
         var score = (_random.NextSingle() * ConnectionScoreJitter * 2f) - ConnectionScoreJitter;
         score += parentEntry is not null && !continuesStraight ? DirectionChangeBonus : 0f;
         score -= StraightRunPenalty * nextRun;
-        score -= LongHallwayPenalty * Math.Max(0, nextRun - _options.MaxHallway);
+        score -= LongHallwayPenalty * Math.Max(0, nextRun - _properties.MaxHallway);
         score += parentDegree == 2 ? TwoWayJunctionBonus : 0f;
         score -= parentDegree == 1 ? ThinBranchPenalty : 0f;
         score -= parentDegree >= 4 ? CrowdedJunctionPenalty : 0f;
