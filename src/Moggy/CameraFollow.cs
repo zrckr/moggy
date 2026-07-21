@@ -11,7 +11,7 @@ public struct CameraFollow
     public Vector2 DragSize;
 }
 
-public sealed class CameraFollowSystem : GameSystem
+public sealed class CameraFollowSystem : GameSystem, ILevelParticipant
 {
     private static readonly Vector2 DefaultDragSize = new(96f, 80f);
 
@@ -31,15 +31,6 @@ public sealed class CameraFollowSystem : GameSystem
             .Include<Sprite>()
             .Build();
 
-        var camera = _camera.Single();
-        if (!Registry.Has<CameraFollow>(camera))
-        {
-            Registry.Set(camera, new CameraFollow
-            {
-                Target = _player.Single(),
-                DragSize = DefaultDragSize
-            });
-        }
     }
 
     public override void Update(Time time)
@@ -76,6 +67,31 @@ public sealed class CameraFollowSystem : GameSystem
 
         ref var viewport = ref Registry.Get<Viewport>(cameraEntity);
         ClampToLevelBounds(ref camera, in viewport);
+    }
+
+    public void EnterLevel(LevelStartMode mode)
+    {
+        var camera = _camera.Single();
+        var target = _player.Single();
+        if (Registry.Has<CameraFollow>(camera))
+        {
+            ref var follow = ref Registry.Get<CameraFollow>(camera);
+            follow.Target = target;
+        }
+        else
+        {
+            Registry.Set(camera, new CameraFollow
+            {
+                Target = target,
+                DragSize = DefaultDragSize
+            });
+        }
+    }
+
+    public void ExitLevel()
+    {
+        var camera = _camera.Single();
+        Registry.Remove<CameraFollow>(camera);
     }
 
     private void EnsureFollowTarget(Entity camera)

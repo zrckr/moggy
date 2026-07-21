@@ -12,51 +12,26 @@ public struct Enemy()
     public float MovementSpeed;
 }
 
-public sealed class EnemySystem : GameSystem
+public sealed class EnemySystem : GameSystem, ILevelParticipant
 {
-    private Query _enemies = null!;
-
     private Query _target = null!;
+
+    private EnemyDefinition _definition = null!;
 
     private SpriteAsset _moveSprite = null!;
 
     private readonly HashSet<Cell> _claimedCells = [];
 
+    private readonly List<Entity> _enemyEntities = new();
+
     public override void Startup()
     {
-        ref var level = ref Registry.Singleton<Level>();
-
-        var definition = Assets.LoadJson<EnemyDefinition>("Divil/Definition");
-        var spawnCells = new HashSet<Cell>();
-        _moveSprite = Assets.Load<SpriteAsset>(definition.MoveSprite);
-        var random = new Random(definition.SpawnSeed);
-
-        for (var i = 0; i < definition.Count; i++)
-        {
-            var origin = new Cell(random.Next(level.Columns), random.Next(level.Rows));
-            var startCell = FindNearestUnclaimedWalkableCell(in level, origin, spawnCells);
-            spawnCells.Add(startCell);
-
-            Registry.Create(
-                new Enemy { MovementSpeed = definition.MovementSpeed },
-                new LevelTransform { Position = startCell },
-                new Sprite
-                {
-                    Asset = _moveSprite,
-                    Transform = new Transform(level.CellToCenter(startCell), new Vector2(2f), 0f),
-                    Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
-                });
-        }
+        _definition = Assets.LoadJson<EnemyDefinition>("Divil/Definition");
+        _moveSprite = Assets.Load<SpriteAsset>(_definition.MoveSprite);
 
         _target = Registry.Query()
             .Include<NavigationTarget>()
             .Include<LevelTransform>()
-            .Build();
-
-        _enemies = Registry.Query()
-            .Include<Enemy>()
-            .Include<LevelTransform>()
-            .Include<Sprite>()
             .Build();
     }
 
@@ -69,7 +44,7 @@ public sealed class EnemySystem : GameSystem
         // Claim current cells and destinations before planning this frame's moves.
         ClaimOccupiedCells();
 
-        foreach (var entity in _enemies)
+        foreach (var entity in _enemyEntities)
         {
             ref var enemy = ref Registry.Get<Enemy>(entity);
             ref var transform = ref Registry.Get<LevelTransform>(entity);
@@ -94,6 +69,44 @@ public sealed class EnemySystem : GameSystem
             sprite.Animation.SetName(enemy.Direction.GetAnimationName());
             sprite.FlipH = enemy.Direction.IsAnimationFlipped();
         }
+    }
+
+    public void EnterLevel(LevelStartMode mode)
+    {
+        ref var level = ref Registry.Singleton<Level>();
+        var spawnCells = new HashSet<Cell>();
+        var random = new Random(_definition.SpawnSeed);
+
+        _enemyEntities.Clear();
+        for (var index = 0; index < _definition.Count; index++)
+        {
+            var origin = new Cell(random.Next(level.Columns), random.Next(level.Rows));
+            var startCell = FindNearestUnclaimedWalkableCell(in level, origin, spawnCells);
+            spawnCells.Add(startCell);
+
+            var enemy = Registry.Create(
+                new Enemy { MovementSpeed = _definition.MovementSpeed },
+                new LevelTransform { Position = startCell },
+                new Sprite
+                {
+                    Asset = _moveSprite,
+                    Transform = new Transform(level.CellToCenter(startCell), new Vector2(2f), 0f),
+                    Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
+                });
+
+            _enemyEntities.Add(enemy);
+        }
+    }
+
+    public void ExitLevel()
+    {
+        foreach (var enemy in _enemyEntities)
+        {
+            Registry.Destroy(enemy);
+        }
+
+        _enemyEntities.Clear();
+        _claimedCells.Clear();
     }
 
     private void TryStartMove(
@@ -215,7 +228,7 @@ public sealed class EnemySystem : GameSystem
     {
         _claimedCells.Clear();
 
-        foreach (var entity in _enemies)
+        foreach (var entity in _enemyEntities)
         {
             ref var transform = ref Registry.Get<LevelTransform>(entity);
             _claimedCells.Add(transform.Position);

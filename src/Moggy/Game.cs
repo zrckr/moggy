@@ -93,6 +93,7 @@ public class Game : App
             system.Startup();
         }
 
+        EnterLevel(LevelStartMode.Initial);
         _tools = new ToolsHost(this, _registry, _assets);
     }
 
@@ -102,6 +103,16 @@ public class Game : App
         if (Input.Keyboard.Pressed(Keys.Escape))
         {
             game.IsPaused = !game.IsPaused;
+        }
+
+        ref var level = ref _registry.Singleton<LevelRuntime>();
+        if (game.State == GameState.Level &&
+            Input.Keyboard.Pressed(Keys.F5) &&
+            level.State == LevelState.Defeat)
+        {
+            ExitLevel();
+            EnterLevel(LevelStartMode.Restart);
+            return;
         }
 
         if (!game.IsPaused)
@@ -157,6 +168,7 @@ public class Game : App
 
     protected override void Shutdown()
     {
+        ExitLevel();
         for (var index = _systems.Count - 1; index >= 0; index--)
         {
             _systems[index].Shutdown();
@@ -167,6 +179,28 @@ public class Game : App
         _imgui.Dispose();
         _screen.Dispose();
         _batcher.Dispose();
+    }
+
+    private void EnterLevel(LevelStartMode mode)
+    {
+        foreach (var system in _systems)
+        {
+            if (system is ILevelParticipant participant)
+            {
+                participant.EnterLevel(mode);
+            }
+        }
+    }
+
+    private void ExitLevel()
+    {
+        for (var index = _systems.Count - 1; index >= 0; index--)
+        {
+            if (_systems[index] is ILevelParticipant participant)
+            {
+                participant.ExitLevel();
+            }
+        }
     }
 
     private T CreateSystem<T>() where T : GameSystem, new()

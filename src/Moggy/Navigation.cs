@@ -79,30 +79,14 @@ public struct Navigation
     }
 }
 
-public sealed class NavigationSystem : GameSystem
+public sealed class NavigationSystem : GameSystem, ILevelParticipant
 {
-    private Query _target = null!;
-
-    public override void Startup()
-    {
-        _target = Registry.Query()
-            .Include<NavigationTarget>()
-            .Include<LevelTransform>()
-            .Build();
-
-        ref var level = ref Registry.Singleton<Level>();
-        ref var transform = ref Registry.Get<LevelTransform>(_target.Single());
-
-        var navigationEntity = Registry.Create(new Navigation(transform.Position, new int[level.Rows * level.Columns]));
-
-        ref var navigation = ref Registry.Get<Navigation>(navigationEntity);
-        Rebuild(ref navigation, in level, transform.Position);
-    }
+    private Entity _navigationEntity = Entity.Invalid;
 
     public override void Update(Time time)
     {
         ref var level = ref Registry.Singleton<Level>();
-        ref var transform = ref Registry.Get<LevelTransform>(_target.Single());
+        ref var transform = ref Registry.Get<LevelTransform>(_navigationEntity);
         ref var navigation = ref Registry.Singleton<Navigation>();
 
         navigation.TryRecord(transform.Position);
@@ -114,6 +98,24 @@ public sealed class NavigationSystem : GameSystem
         }
 
         Rebuild(ref navigation, in level, target);
+    }
+
+    public void EnterLevel(LevelStartMode mode)
+    {
+        ref var level = ref Registry.Singleton<Level>();
+        ref var transform = ref Registry.Get<LevelTransform>(_navigationEntity);
+
+        _navigationEntity = Registry.Create(
+            new Navigation(transform.Position, new int[level.Rows * level.Columns]));
+
+        ref var navigation = ref Registry.Get<Navigation>(_navigationEntity);
+        Rebuild(ref navigation, in level, transform.Position);
+    }
+
+    public void ExitLevel()
+    {
+        Registry.Destroy(_navigationEntity);
+        _navigationEntity = Entity.Invalid;
     }
 
     private static void Rebuild(ref Navigation navigation, in Level level, Cell target)

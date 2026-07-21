@@ -33,10 +33,8 @@ public struct Player()
     public FaceDirection? BufferedDirection = null;
 }
 
-public sealed class PlayerSystem : GameSystem
+public sealed class PlayerSystem : GameSystem, ILevelParticipant
 {
-    private Query _player = null!;
-
     private VirtualDevice _inputDevice = null!;
 
     private VirtualStick _moveStick = null!;
@@ -47,29 +45,13 @@ public sealed class PlayerSystem : GameSystem
 
     private PlayerDefinition _definition = null!;
 
+    private Entity _playerEntity = Entity.Invalid;
+
     public override void Startup()
     {
         _definition = Assets.LoadJson<PlayerDefinition>("Player/Definition");
         _idleSprite = Assets.Load<SpriteAsset>(_definition.IdleSprite);
         _moveSprite = Assets.Load<SpriteAsset>(_definition.MoveSprite);
-
-        ref var level = ref Registry.Singleton<Level>();
-        var startCell = level.FindNearestWalkableCell(new Cell(level.Columns / 2, level.Rows / 2));
-
-        var player = Registry.Create(
-            new Player(),
-            new LevelTransform
-            {
-                Position = startCell
-            },
-            new Sprite
-            {
-                Asset = _idleSprite,
-                Transform = new Transform(level.CellToCenter(startCell), new Vector2(2f), 0f),
-                Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
-            });
-
-        Registry.SetTag<NavigationTarget>(player);
 
         _inputDevice = new VirtualDevice(Game.Input, "Player");
         _inputDevice.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
@@ -77,23 +59,16 @@ public sealed class PlayerSystem : GameSystem
             new StickBindingSet()
                 .AddWasd()
                 .AddArrowKeys());
-
-        _player = Registry.Query()
-            .Include<Player>()
-            .Include<LevelTransform>()
-            .Include<Sprite>()
-            .Build();
     }
 
     public override void Update(Time time)
     {
-        var playerEntity = _player.Single();
         ref var level = ref Registry.Singleton<Level>();
-        ref var player = ref Registry.Get<Player>(playerEntity);
-        ref var transform = ref Registry.Get<LevelTransform>(playerEntity);
-        ref var sprite = ref Registry.Get<Sprite>(playerEntity);
+        ref var player = ref Registry.Get<Player>(_playerEntity);
+        ref var transform = ref Registry.Get<LevelTransform>(_playerEntity);
+        ref var sprite = ref Registry.Get<Sprite>(_playerEntity);
 
-        if (Registry.Has<LevelMover>(playerEntity))
+        if (Registry.Has<LevelMover>(_playerEntity))
         {
             player.BufferedDirection = _moveStick.ToFaceDirection();
             player.State = PlayerState.Move;
@@ -104,7 +79,7 @@ public sealed class PlayerSystem : GameSystem
             player.State = PlayerState.Idle;
 
             if (TryChooseMoveDirection(ref player, in level, in transform, out var direction) &&
-                TryStartMove(playerEntity, in level, in transform, direction))
+                TryStartMove(_playerEntity, in level, in transform, direction))
             {
                 player.State = PlayerState.Move;
                 sprite.Asset = _moveSprite;
@@ -177,5 +152,32 @@ public sealed class PlayerSystem : GameSystem
         _inputDevice.Dispose();
         _moveSprite.Dispose();
         _idleSprite.Dispose();
+    }
+
+    public void EnterLevel(LevelStartMode mode)
+    {
+        ref var level = ref Registry.Singleton<Level>();
+        var startCell = level.FindNearestWalkableCell(new Cell(level.Columns / 2, level.Rows / 2));
+
+        _playerEntity = Registry.Create(
+            new Player(),
+            new LevelTransform
+            {
+                Position = startCell
+            },
+            new Sprite
+            {
+                Asset = _idleSprite,
+                Transform = new Transform(level.CellToCenter(startCell), new Vector2(2f), 0f),
+                Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
+            });
+
+        Registry.SetTag<NavigationTarget>(_playerEntity);
+    }
+
+    public void ExitLevel()
+    {
+        Registry.Destroy(_playerEntity);
+        _playerEntity = Entity.Invalid;
     }
 }

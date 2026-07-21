@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Foster.Framework;
 using Moggy.Assets;
+using Moggy.Ecs;
 using Moggy.Mazegen;
 
 namespace Moggy;
@@ -131,19 +132,20 @@ public readonly struct Level(Maze maze, int cellWidth, int cellHeight)
     }
 }
 
-public sealed class LevelSystem : GameSystem
+public sealed class LevelSystem : GameSystem, ILevelParticipant
 {
+    private LevelDefinition _definition = null!;
+
+    private MazeDefinition _mazeDefinition = null!;
+
     private ImageAsset _wall = null!;
+
+    private Entity _levelEntity = Entity.Invalid;
 
     public override void Startup()
     {
-        var definition = Assets.LoadJson<LevelDefinition>("LevelDefinition");
-        var maze = MazeGenerator.Generate(
-            GenerateRegion(definition.TilingRows, definition.TilingColumns),
-            Assets.LoadJson<MazeDefinition>("MazeDefinition"));
-
-        Registry.Create(new Level(maze, definition.CellSize, definition.CellSize));
-
+        _definition = Assets.LoadJson<LevelDefinition>("LevelDefinition");
+        _mazeDefinition = Assets.LoadJson<MazeDefinition>("MazeDefinition");
         _wall = Assets.Load<ImageAsset>("GridWall");
     }
 
@@ -176,17 +178,25 @@ public sealed class LevelSystem : GameSystem
         _wall.Dispose();
     }
 
-    private static IReadOnlyCollection<Point2> GenerateRegion(int tilingRows, int tilingColumns)
+    public void EnterLevel(LevelStartMode mode)
     {
         var region = new List<Point2>();
-        for (var row = 0; row < tilingRows; row++)
+        for (var row = 0; row < _definition.TilingRows; row++)
         {
-            for (var column = 0; column < tilingColumns; column++)
+            for (var column = 0; column < _definition.TilingColumns; column++)
             {
                 region.Add(new Point2(row, column));
             }
         }
 
-        return region;
+        var maze = MazeGenerator.Generate(region, _mazeDefinition);
+        _levelEntity = Registry.Create(
+            new Level(maze, _definition.CellSize, _definition.CellSize));
+    }
+
+    public void ExitLevel()
+    {
+        Registry.Destroy(_levelEntity);
+        _levelEntity = Entity.Invalid;
     }
 }
