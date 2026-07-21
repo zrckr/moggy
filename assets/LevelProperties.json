@@ -8,7 +8,5 @@
   "EnemyScore": 200,
   "AbilityOdds": 0.6,
   "AbilityTrigger": 3,
-  "BigBoyDuration": "PT10S",
-  "MicroManDuration": "PT10S",
   "RespawnInvincibility": "PT2S"
 }

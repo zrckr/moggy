@@ -75,7 +75,7 @@ public sealed class CameraFollowSystem : GameSystem, ILevelParticipant
         ClampToLevelBounds(ref camera, in viewport);
     }
 
-    public void EnterLevel(LevelStartMode mode)
+    public void EnterLevel()
     {
         var camera = _camera.Single();
         var target = _player.Single();

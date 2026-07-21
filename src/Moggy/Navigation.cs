@@ -106,7 +106,7 @@ public sealed class NavigationSystem : GameSystem, ILevelParticipant
         Rebuild(ref navigation, in level, target);
     }
 
-    public void EnterLevel(LevelStartMode mode)
+    public void EnterLevel()
     {
         ref var level = ref Registry.Singleton<Level>();
         ref var transform = ref Registry.Get<LevelTransform>(_navigationEntity);

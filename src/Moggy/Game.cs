@@ -80,6 +80,10 @@ public class Game : App
             CreateSystem<LevelSystem>(),
             CreateSystem<ChaosSystem>(),
             CreateSystem<PlayerSystem>(),
+            CreateSystem<AbilitiesSystem>(),
+            CreateSystem<NormalSystem>(),
+            CreateSystem<BigBoySystem>(),
+            CreateSystem<MicroManSystem>(),
             CreateSystem<NavigationSystem>(),
             CreateSystem<EnemySystem>(),
             CreateSystem<BugSystem>(),
@@ -95,7 +99,7 @@ public class Game : App
             system.Startup();
         }
 
-        EnterLevel(LevelStartMode.Initial);
+        EnterLevel();
         _tools = new ToolsHost(this, _registry, _assets);
     }
 
@@ -113,34 +117,36 @@ public class Game : App
             level.State == LevelState.Defeat)
         {
             ExitLevel();
-            EnterLevel(LevelStartMode.Restart);
+            EnterLevel();
             return;
         }
 
-        if (game is { State: GameState.Level, IsPaused: false })
+        if (game is { State: GameState.Level, IsPaused: true })
         {
-            var previousState = game.State;
-            foreach (var system in _systems)
-            {
-                system.Update(Time);
-            }
+            return;
+        }
 
-            // Apply lifecycle changes after systems finish processing the current state.
-            if (game.NextState is { } nextState)
+        var previousState = game.State;
+        foreach (var system in _systems)
+        {
+            system.Update(Time);
+        }
+
+        // Apply lifecycle changes after systems finish processing the current state.
+        if (game.NextState is { } nextState)
+        {
+            game.NextState = null;
+            if (previousState != nextState)
             {
-                game.NextState = null;
-                if (previousState != nextState)
+                if (previousState == GameState.Level)
                 {
-                    if (previousState == GameState.Level)
-                    {
-                        ExitLevel();
-                    }
+                    ExitLevel();
+                }
 
-                    game.State = nextState;
-                    if (nextState == GameState.Level)
-                    {
-                        EnterLevel(LevelStartMode.Restart);
-                    }
+                game.State = nextState;
+                if (nextState == GameState.Level)
+                {
+                    EnterLevel();
                 }
             }
         }
@@ -203,13 +209,13 @@ public class Game : App
         _batcher.Dispose();
     }
 
-    private void EnterLevel(LevelStartMode mode)
+    private void EnterLevel()
     {
         foreach (var system in _systems)
         {
             if (system is ILevelParticipant participant)
             {
-                participant.EnterLevel(mode);
+                participant.EnterLevel();
             }
         }
     }

@@ -1,0 +1,7 @@
+﻿{
+  "MovementSpeed": 4.0,
+  "Duration": "PT10S",
+  "Scale": 4.0,
+  "IdleSprite": "",
+  "MoveSprite": "Player/BigBoy"
+}

@@ -24,9 +24,7 @@ public sealed record LevelProperties
 
     public float AbilityOdds { get; init; }
 
-    public TimeSpan BigBoyDuration { get; init; }
-
-    public TimeSpan MicroManDuration { get; init; }
+    public int AbilityTrigger { get; init; }
 
     public TimeSpan RespawnInvincibility { get; init; }
 }
@@ -209,7 +207,7 @@ public sealed class LevelSystem : GameSystem, ILevelParticipant
         _wall.Dispose();
     }
 
-    public void EnterLevel(LevelStartMode mode)
+    public void EnterLevel()
     {
         var region = new List<Point2>();
         for (var row = 0; row < _properties.TilingRows; row++)

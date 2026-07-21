@@ -30,7 +30,7 @@ public sealed class LevelRuntimeSystem : GameSystem, ILevelParticipant
         Registry.Create(new LevelRuntime());
     }
 
-    public void EnterLevel(LevelStartMode mode)
+    public void EnterLevel()
     {
         ref var runtime = ref Registry.Singleton<LevelRuntime>();
         runtime.State = LevelState.Ready;
@@ -106,15 +106,9 @@ public sealed class LevelRuntimeSystem : GameSystem, ILevelParticipant
     }
 }
 
-public enum LevelStartMode
-{
-    Initial,
-    Restart
-}
-
 public interface ILevelParticipant
 {
-    void EnterLevel(LevelStartMode mode)
+    void EnterLevel()
     {
     }
 

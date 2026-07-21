@@ -350,6 +350,39 @@ public sealed class Registry
     }
 
     /// <summary>
+    /// Removes components that inherit the interface <typeparamref name="TInterface>"/> from an entity.
+    /// </summary>
+    /// <returns>The number of removed entities.</returns>
+    public int RemoveAll<TInterface>(Entity entity)
+    {
+        if (!IsAlive(entity))
+        {
+            return 0;
+        }
+
+        var removed = 0;
+        foreach (var (type, storage) in _storages)
+        {
+            if (!typeof(TInterface).IsAssignableFrom(type))
+            {
+                continue;
+            }
+
+            if (storage.Remove(entity))
+            {
+                removed++;
+            }
+        }
+
+        if (removed != 0)
+        {
+            Version++;
+        }
+
+        return removed;
+    }
+
+    /// <summary>
     /// Defers removing a component of type <typeparamref name="T"/> until the
     /// current query enumeration completes.
     /// </summary>
@@ -358,6 +391,17 @@ public sealed class Registry
         EnsureAlive(entity);
         EnsureEnumerating();
         _deferredCommands.Add(new RemoveDeferredCommand<T>(entity));
+    }
+
+    /// <summary>
+    /// Defers removing components that inherit the interface <typeparamref name="TInterface>"/> until the
+    /// current query enumeration completes.
+    /// </summary>
+    public void RemoveAllDeferred<TInterface>(Entity entity)
+    {
+        EnsureAlive(entity);
+        EnsureEnumerating();
+        _deferredCommands.Add(new RemoveAllDeferredCommand<TInterface>(entity));
     }
 
     /// <summary>
@@ -386,6 +430,22 @@ public sealed class Registry
 
         var componentStorage = (ComponentStorage<T>)storage;
         return ref componentStorage.Get(componentStorage.EntityAt(0));
+    }
+
+    /// <summary>
+    /// Tries to retrieve and remove a component from an entity if the entity has the component.
+    /// </summary>
+    public bool TryRemove<T>(Entity entity, out T? component) where T : struct
+    {
+        if (!Has<T>(entity))
+        {
+            component = null;
+            return false;
+        }
+
+        component = Get<T>(entity);
+        Remove<T>(entity);
+        return true;
     }
 
     /// <summary>
@@ -507,6 +567,14 @@ public sealed class Registry
         public void Apply(Registry registry)
         {
             registry.Remove<T>(entity);
+        }
+    }
+
+    private readonly struct RemoveAllDeferredCommand<T>(Entity entity) : IDeferredCommand
+    {
+        public void Apply(Registry registry)
+        {
+            registry.RemoveAll<T>(entity);
         }
     }
 }

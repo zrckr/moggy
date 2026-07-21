@@ -88,7 +88,7 @@ public sealed class EnemySystem : GameSystem, ILevelParticipant
         }
     }
 
-    public void EnterLevel(LevelStartMode mode)
+    public void EnterLevel()
     {
         ref var level = ref Registry.Singleton<Level>();
         var spawnCells = new HashSet<Cell>();

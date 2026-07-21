@@ -5,15 +5,6 @@ using Moggy.Ecs;
 
 namespace Moggy;
 
-public sealed record PlayerProperties
-{
-    public float MovementSpeed { get; init; }
-
-    public string IdleSprite { get; init; } = string.Empty;
-
-    public string MoveSprite { get; init; } = string.Empty;
-}
-
 public enum PlayerState
 {
     Idle,
@@ -52,13 +43,13 @@ public sealed class PlayerSystem : GameSystem, ILevelParticipant
 
     private SpriteAsset _moveSprite = null!;
 
-    private PlayerProperties _properties = null!;
+    private AbilityProperties _properties = null!;
 
     private Entity _playerEntity = Entity.Invalid;
 
     public override void Startup()
     {
-        _properties = Assets.LoadJson<PlayerProperties>("Player/Properties");
+        _properties = Assets.LoadJson<AbilityProperties>("Player/Normal");
         _idleSprite = Assets.Load<SpriteAsset>(_properties.IdleSprite);
         _moveSprite = Assets.Load<SpriteAsset>(_properties.MoveSprite);
 
@@ -169,7 +160,7 @@ public sealed class PlayerSystem : GameSystem, ILevelParticipant
         _idleSprite.Dispose();
     }
 
-    public void EnterLevel(LevelStartMode mode)
+    public void EnterLevel()
     {
         ref var level = ref Registry.Singleton<Level>();
         var startCell = level.FindNearestWalkableCell(new Cell(level.Columns / 2, level.Rows / 2));
@@ -183,11 +174,13 @@ public sealed class PlayerSystem : GameSystem, ILevelParticipant
             new Sprite
             {
                 Asset = _idleSprite,
-                Transform = new Transform(level.CellToCenter(startCell), new Vector2(2f), 0f),
+                Transform = new Transform(level.CellToCenter(startCell), new Vector2(_properties.Scale), 0f),
                 Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
-            });
+            },
+            new Abilities());
 
         Registry.SetTag<NavigationTarget>(_playerEntity);
+        Registry.SetTag<Normal>(_playerEntity);
     }
 
     public void ExitLevel()

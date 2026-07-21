@@ -1,0 +1,7 @@
+﻿{
+  "MovementSpeed": 12.0,
+  "Duration": "PT10S",
+  "Scale": 1.0,
+  "IdleSprite": "Player/Idle",
+  "MoveSprite": "Player/Move"
+}
