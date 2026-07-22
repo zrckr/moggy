@@ -19,7 +19,7 @@ public sealed class Registry
 
     private readonly Dictionary<Type, IComponentStorage> _storages = new();
 
-    private List<IDeferredCommand> _deferredCommands = [];
+    private List<Action> _deferredActions = [];
 
     private int _activeEnumerators;
 
@@ -306,7 +306,8 @@ public sealed class Registry
         }
 
         EnsureEnumerating();
-        _deferredCommands.Add(new SetDeferredCommand<T>(entity, component));
+        var capturedComponent = component;
+        _deferredActions.Add(() => Set(entity, in capturedComponent));
     }
 
     /// <summary>
@@ -323,7 +324,7 @@ public sealed class Registry
         }
 
         EnsureEnumerating();
-        _deferredCommands.Add(new SetTagDeferredCommand<T>(entity));
+        _deferredActions.Add(() => SetTag<T>(entity));
     }
 
     /// <summary>
@@ -390,7 +391,7 @@ public sealed class Registry
     {
         EnsureAlive(entity);
         EnsureEnumerating();
-        _deferredCommands.Add(new RemoveDeferredCommand<T>(entity));
+        _deferredActions.Add(() => Remove<T>(entity));
     }
 
     /// <summary>
@@ -401,7 +402,7 @@ public sealed class Registry
     {
         EnsureAlive(entity);
         EnsureEnumerating();
-        _deferredCommands.Add(new RemoveAllDeferredCommand<TInterface>(entity));
+        _deferredActions.Add(() => RemoveAll<TInterface>(entity));
     }
 
     /// <summary>
@@ -525,56 +526,21 @@ public sealed class Registry
 
     private void PlaybackDeferred()
     {
-        if (_deferredCommands.Count != 0)
+        if (_deferredActions.Count == 0)
         {
-            var commands = _deferredCommands;
-            _deferredCommands = new List<IDeferredCommand>();
-            foreach (var command in commands)
-            {
-                command.Apply(this);
-            }
+            return;
+        }
+
+        var actions = _deferredActions;
+        _deferredActions = new List<Action>();
+        foreach (var action in actions)
+        {
+            action();
         }
     }
 
     private static bool IsTag<T>() where T : struct
     {
         return typeof(ITag).IsAssignableFrom(typeof(T));
-    }
-
-    private interface IDeferredCommand
-    {
-        void Apply(Registry registry);
-    }
-
-    private readonly struct SetDeferredCommand<T>(Entity entity, T component) : IDeferredCommand where T : struct
-    {
-        public void Apply(Registry registry)
-        {
-            registry.Set(entity, component);
-        }
-    }
-
-    private readonly struct SetTagDeferredCommand<T>(Entity entity) : IDeferredCommand where T : struct
-    {
-        public void Apply(Registry registry)
-        {
-            registry.SetTag<T>(entity);
-        }
-    }
-
-    private readonly struct RemoveDeferredCommand<T>(Entity entity) : IDeferredCommand where T : struct
-    {
-        public void Apply(Registry registry)
-        {
-            registry.Remove<T>(entity);
-        }
-    }
-
-    private readonly struct RemoveAllDeferredCommand<T>(Entity entity) : IDeferredCommand
-    {
-        public void Apply(Registry registry)
-        {
-            registry.RemoveAll<T>(entity);
-        }
     }
 }
