@@ -27,10 +27,10 @@ public struct Chaos()
 
 public sealed class ChaosSystem : GameSystem
 {
-    private ChaosProperties _properties = null!;
+    private LevelProperties _properties = null!;
 
     public override void Startup()
     {
-        _properties = Assets.LoadJson<ChaosProperties>("ChaosProperties");
+        _properties = Assets.LoadJson<LevelProperties>("LevelProperties");
     }
 }

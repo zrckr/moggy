@@ -8,5 +8,26 @@
   "EnemyScore": 200,
   "AbilityOdds": 0.6,
   "AbilityTrigger": 3,
-  "RespawnInvincibility": "PT2S"
+  "RespawnInvincibility": "PT2S",
+  "Chaos": {
+    "AttentionMaxLevel": 4,
+    "AttentionThresholds": [100, 250, 450, 700],
+    "PerBug": 100,
+    "PerAbilityRoll": 150,
+    "ComboMultiplier": 2,
+    "ComboWindowSeconds": 3,
+    "DecayDelaySeconds": 4,
+    "DecayPerSecond": 25,
+    "RemovedPerStomp": 150
+  },
+  "Maze": {
+    "Seed": 17,
+    "Erosion": 0.33333334,
+    "Exits": 4,
+    "MaxHallway": 3,
+    "MaxDeadEnd": 3,
+    "MaxRepairs": 12,
+    "ExtraLoops": 0,
+    "Temperature": 0.6
+  }
 }

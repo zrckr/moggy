@@ -1,6 +1,6 @@
 {
   "MovementSpeed": 8.0,
-  "Duration": "P24H",
+  "Duration": "PT24H",
   "Scale": 2.0,
   "IdleSprite": "Player/Idle",
   "MoveSprite": "Player/Move"

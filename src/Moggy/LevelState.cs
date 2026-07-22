@@ -8,7 +8,8 @@ public enum LevelState
     Ready,
     Active,
     Victory,
-    Defeat
+    Defeat,
+    Respawn
 }
 
 public struct LevelRuntime()
@@ -59,6 +60,10 @@ public sealed class LevelRuntimeGameSystem : GameSystem, IGameSystemGroupState
                 UpdateDefeatState();
                 break;
 
+            case LevelState.Respawn:
+                UpdateRespawnState();
+                break;
+
             default:
                 Logger.Error("Unknown level state: {0}", runtime.State);
                 break;
@@ -95,6 +100,11 @@ public sealed class LevelRuntimeGameSystem : GameSystem, IGameSystemGroupState
     }
 
     private void UpdateDefeatState()
+    {
+        Game.TransitionTo(GameState.Score);
+    }
+
+    private void UpdateRespawnState()
     {
     }
 }

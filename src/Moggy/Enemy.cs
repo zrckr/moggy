@@ -227,7 +227,7 @@ public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
         enemy.Direction = direction;
         _claimedCells.Add(targetCell);
 
-        Registry.SetDeferred(entity, new LevelMover
+        Registry.Set(entity, new LevelMover
         {
             From = from,
             To = targetCell,

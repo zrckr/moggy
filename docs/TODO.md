@@ -13,13 +13,13 @@ Keep Collect 'Em All, bosses, progression, and final content out of this work.
 
 ## 1. Slice state and tuning
 
-- [ ] Add a single source of tuning values for the score target, starting lives,
+- [x] Add a single source of tuning values for the score target, starting lives,
   bug and enemy scores, ability odds and duration, respawn timing, chaos, and
   attention thresholds.
-- [ ] Add run and level state for score, lives, objective progress, game-over,
+- [x] Add run and level state for score, lives, objective progress, game-over,
   victory, and the score screen.
-- [ ] Replace startup-only entity creation with level setup and restart paths.
-- [ ] Keep the current fixed seed while the slice is under test.
+- [x] Replace startup-only entity creation with level setup and restart paths.
+- [x] Keep the current fixed seed while the slice is under test.
 
 ## 2. Level content
 

@@ -7,9 +7,17 @@ using Serilog;
 
 namespace Moggy;
 
+public enum GameState
+{
+    Level,
+    Score
+}
+
 public class Game : App
 {
     private static readonly ILogger Logger = Serilog.Log.ForContext<Game>();
+
+    public bool IsPaused { get; private set; } = true; // TODO: Debug only
 
     internal GameState State => _gameStates.State;
 
@@ -96,17 +104,19 @@ public class Game : App
             CreateSystem<HudSystem>()
         );
 
+        var scoreSystems = new GameSystemGroup(
+            CreateSystem<ScoreScreenGameSystem>()
+        );
+
         _gameStates = new GameSystemGroup<GameState>(
             GameState.Level,
             new Dictionary<GameState, GameSystemGroup>
             {
                 [GameState.Level] = levelSystems,
-                [GameState.Score] = new(),
-                [GameState.Menu] = new()
+                [GameState.Score] = scoreSystems
             });
 
         _gameSystems = new GameSystemGroup(
-            CreateSystem<GameRuntimeSystem>(),
             CreateSystem<ViewportSystem>(),
             _gameStates);
 
@@ -122,26 +132,15 @@ public class Game : App
 
     protected override void Update()
     {
-        ref var game = ref _registry.Singleton<GameRuntime>();
         if (Input.Keyboard.Pressed(Keys.Escape))
         {
-            game.IsPaused = !game.IsPaused;
+            IsPaused = !IsPaused;
         }
 
-        if (State == GameState.Level &&
-            Input.Keyboard.Pressed(Keys.F5) &&
-            _registry.Singleton<LevelRuntime>().State == LevelState.Defeat)
+        if (State != GameState.Level || !IsPaused)
         {
-            _gameStates.Restart();
-            return;
+            _gameSystems.Update(Time);
         }
-
-        if (State == GameState.Level && game.IsPaused)
-        {
-            return;
-        }
-
-        _gameSystems.Update(Time);
     }
 
     protected override void Render()

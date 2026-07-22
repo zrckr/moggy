@@ -27,6 +27,10 @@ public sealed record LevelProperties
     public int AbilityTrigger { get; init; }
 
     public TimeSpan RespawnInvincibility { get; init; }
+
+    public required ChaosProperties Chaos { get; init; }
+
+    public required MazeProperties Maze { get; init; }
 }
 
 public readonly record struct Cell(int Column, int Row)
@@ -159,8 +163,6 @@ public sealed class LevelGameSystem : GameSystem, IGameSystemGroupState
 {
     private LevelProperties _properties = null!;
 
-    private MazeProperties _mazeProperties = null!;
-
     private ImageAsset _wall = null!;
 
     private Entity _levelEntity = Entity.Invalid;
@@ -168,7 +170,6 @@ public sealed class LevelGameSystem : GameSystem, IGameSystemGroupState
     public override void Startup()
     {
         _properties = Assets.LoadJson<LevelProperties>("LevelProperties");
-        _mazeProperties = Assets.LoadJson<MazeProperties>("MazeProperties");
         _wall = Assets.Load<ImageAsset>("GridWall");
     }
 
@@ -212,7 +213,7 @@ public sealed class LevelGameSystem : GameSystem, IGameSystemGroupState
             }
         }
 
-        var maze = MazeGenerator.Generate(region, _mazeProperties);
+        var maze = MazeGenerator.Generate(region, _properties.Maze);
         _levelEntity = Registry.Create(
             new Level(maze, _properties.CellSize, _properties.CellSize));
     }
