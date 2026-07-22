@@ -20,11 +20,6 @@ public sealed class HudSystem : GameSystem
     public override void Render(Time time)
     {
         ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         var isPaused = game.IsPaused;
         Batcher.InVirtualScreen(() =>
         {

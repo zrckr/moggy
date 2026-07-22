@@ -28,7 +28,7 @@ public readonly record struct AbilityEntered<T>(Entity Player) where T : struct,
 
 public readonly record struct AbilityExited<T>(Entity Player) where T : struct, IAbility;
 
-public sealed class AbilitiesSystem : GameSystem, ILevelParticipant
+public sealed class AbilitiesGameSystem : GameSystem, IGameSystemGroupState
 {
     private LevelProperties _properties = null!;
 
@@ -50,12 +50,6 @@ public sealed class AbilitiesSystem : GameSystem, ILevelParticipant
 
     public override void Update(Time time)
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         ref var level = ref Registry.Singleton<LevelRuntime>();
         if (level.State != LevelState.Active)
         {
@@ -92,7 +86,7 @@ public sealed class AbilitiesSystem : GameSystem, ILevelParticipant
         }
     }
 
-    public void EnterLevel()
+    public void Enter()
     {
         _playerEntity = Registry.Query()
             .Include<Player>()
@@ -108,7 +102,7 @@ public sealed class AbilitiesSystem : GameSystem, ILevelParticipant
         Registry.Set(_playerEntity, new AbilityEntered<Normal>(_playerEntity));
     }
 
-    public void ExitLevel()
+    public void Exit()
     {
         Registry.RemoveAll<IAbility>(_playerEntity);
         _playerEntity = Entity.Invalid;

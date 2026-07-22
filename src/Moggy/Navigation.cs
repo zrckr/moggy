@@ -79,20 +79,24 @@ public struct Navigation
     }
 }
 
-public sealed class NavigationSystem : GameSystem, ILevelParticipant
+public sealed class NavigationGameSystem : GameSystem, IGameSystemGroupState
 {
+    private Query _target = null!;
+
     private Entity _navigationEntity = Entity.Invalid;
+
+    public override void Startup()
+    {
+        _target = Registry.Query()
+            .Include<NavigationTarget>()
+            .Include<LevelTransform>()
+            .Build();
+    }
 
     public override void Update(Time time)
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         ref var level = ref Registry.Singleton<Level>();
-        ref var transform = ref Registry.Get<LevelTransform>(_navigationEntity);
+        ref var transform = ref Registry.Get<LevelTransform>(_target.Single());
         ref var navigation = ref Registry.Singleton<Navigation>();
 
         navigation.TryRecord(transform.Position);
@@ -106,10 +110,10 @@ public sealed class NavigationSystem : GameSystem, ILevelParticipant
         Rebuild(ref navigation, in level, target);
     }
 
-    public void EnterLevel()
+    public void Enter()
     {
         ref var level = ref Registry.Singleton<Level>();
-        ref var transform = ref Registry.Get<LevelTransform>(_navigationEntity);
+        ref var transform = ref Registry.Get<LevelTransform>(_target.Single());
 
         _navigationEntity = Registry.Create(
             new Navigation(transform.Position, new int[level.Rows * level.Columns]));
@@ -118,7 +122,7 @@ public sealed class NavigationSystem : GameSystem, ILevelParticipant
         Rebuild(ref navigation, in level, transform.Position);
     }
 
-    public void ExitLevel()
+    public void Exit()
     {
         Registry.Destroy(_navigationEntity);
         _navigationEntity = Entity.Invalid;

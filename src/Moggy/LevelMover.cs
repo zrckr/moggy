@@ -34,12 +34,6 @@ public sealed class LevelMoverSystem : GameSystem
 
     public override void Update(Time time)
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         ref var level = ref Registry.Singleton<Level>();
 
         _completed.Clear();

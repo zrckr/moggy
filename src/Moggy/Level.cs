@@ -155,7 +155,7 @@ public readonly struct Level(Maze maze, int cellWidth, int cellHeight)
     }
 }
 
-public sealed class LevelSystem : GameSystem, ILevelParticipant
+public sealed class LevelGameSystem : GameSystem, IGameSystemGroupState
 {
     private LevelProperties _properties = null!;
 
@@ -174,12 +174,6 @@ public sealed class LevelSystem : GameSystem, ILevelParticipant
 
     public override void Render(Time time)
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         ref var level = ref Registry.Singleton<Level>();
 
         for (var row = 0; row < level.Rows; row++)
@@ -207,7 +201,7 @@ public sealed class LevelSystem : GameSystem, ILevelParticipant
         _wall.Dispose();
     }
 
-    public void EnterLevel()
+    public void Enter()
     {
         var region = new List<Point2>();
         for (var row = 0; row < _properties.TilingRows; row++)
@@ -223,7 +217,7 @@ public sealed class LevelSystem : GameSystem, ILevelParticipant
             new Level(maze, _properties.CellSize, _properties.CellSize));
     }
 
-    public void ExitLevel()
+    public void Exit()
     {
         Registry.Destroy(_levelEntity);
         _levelEntity = Entity.Invalid;

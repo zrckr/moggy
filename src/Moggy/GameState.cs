@@ -1,5 +1,4 @@
-﻿using Foster.Framework;
-using Serilog;
+using Foster.Framework;
 
 namespace Moggy;
 
@@ -12,15 +11,11 @@ public enum GameState
 
 public struct GameRuntime()
 {
-    public GameState State = GameState.Level;
-    public GameState? NextState;
     public bool IsPaused = true; // TODO: Debug only
 }
 
 public sealed class GameRuntimeSystem : GameSystem
 {
-    private static readonly ILogger Logger = Serilog.Log.ForContext<GameRuntimeSystem>();
-
     public override void Startup()
     {
         Registry.Create(new GameRuntime());
@@ -28,8 +23,7 @@ public sealed class GameRuntimeSystem : GameSystem
 
     public override void Update(Time time)
     {
-        ref var runtime = ref Registry.Singleton<GameRuntime>();
-        switch (runtime.State)
+        switch (Game.State)
         {
             case GameState.Level:
                 UpdateLevelState();
@@ -42,10 +36,6 @@ public sealed class GameRuntimeSystem : GameSystem
             case GameState.Menu:
                 UpdateMenuState();
                 break;
-
-            default:
-                Logger.Error("Unknown game state: {0}", runtime.State);
-                break;
         }
     }
 
@@ -55,19 +45,17 @@ public sealed class GameRuntimeSystem : GameSystem
 
     private void UpdateScoreState()
     {
-        ref var runtime = ref Registry.Singleton<GameRuntime>();
         if (Game.Input.Keyboard.Pressed(Keys.Enter))
         {
-            runtime.NextState = GameState.Level;
+            Game.TransitionTo(GameState.Level);
         }
     }
 
     private void UpdateMenuState()
     {
-        ref var runtime = ref Registry.Singleton<GameRuntime>();
         if (Game.Input.Keyboard.Pressed(Keys.Enter))
         {
-            runtime.NextState = GameState.Level;
+            Game.TransitionTo(GameState.Level);
         }
     }
 }

@@ -23,7 +23,7 @@ public struct Enemy()
     public float MovementSpeed;
 }
 
-public sealed class EnemySystem : GameSystem, ILevelParticipant
+public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
 {
     private Query _target = null!;
 
@@ -48,12 +48,6 @@ public sealed class EnemySystem : GameSystem, ILevelParticipant
 
     public override void Update(Time time)
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         ref var level = ref Registry.Singleton<Level>();
         ref var navigation = ref Registry.Singleton<Navigation>();
         ref var levelTransform = ref Registry.Get<LevelTransform>(_target.Single());
@@ -88,7 +82,7 @@ public sealed class EnemySystem : GameSystem, ILevelParticipant
         }
     }
 
-    public void EnterLevel()
+    public void Enter()
     {
         ref var level = ref Registry.Singleton<Level>();
         var spawnCells = new HashSet<Cell>();
@@ -115,7 +109,7 @@ public sealed class EnemySystem : GameSystem, ILevelParticipant
         }
     }
 
-    public void ExitLevel()
+    public void Exit()
     {
         foreach (var enemy in _enemyEntities)
         {

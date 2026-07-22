@@ -33,12 +33,6 @@ public sealed class BigBoySystem : GameSystem
 
     public override void Update(Time time)
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         ref var level = ref Registry.Singleton<LevelRuntime>();
         if (level.State != LevelState.Active)
         {

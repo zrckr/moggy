@@ -33,7 +33,7 @@ public struct Player()
     public FaceDirection? BufferedDirection = null;
 }
 
-public sealed class PlayerSystem : GameSystem, ILevelParticipant
+public sealed class PlayerGameSystem : GameSystem, IGameSystemGroupState
 {
     private VirtualDevice _inputDevice = null!;
 
@@ -63,12 +63,6 @@ public sealed class PlayerSystem : GameSystem, ILevelParticipant
 
     public override void Update(Time time)
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         ref var level = ref Registry.Singleton<Level>();
         ref var player = ref Registry.Get<Player>(_playerEntity);
         ref var transform = ref Registry.Get<LevelTransform>(_playerEntity);
@@ -160,7 +154,7 @@ public sealed class PlayerSystem : GameSystem, ILevelParticipant
         _idleSprite.Dispose();
     }
 
-    public void EnterLevel()
+    public void Enter()
     {
         ref var level = ref Registry.Singleton<Level>();
         var startCell = level.FindNearestWalkableCell(new Cell(level.Columns / 2, level.Rows / 2));
@@ -183,7 +177,7 @@ public sealed class PlayerSystem : GameSystem, ILevelParticipant
         Registry.SetTag<Normal>(_playerEntity);
     }
 
-    public void ExitLevel()
+    public void Exit()
     {
         Registry.Destroy(_playerEntity);
         _playerEntity = Entity.Invalid;

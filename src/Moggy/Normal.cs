@@ -25,12 +25,6 @@ public sealed class NormalSystem : GameSystem
 
     public override void Update(Time time)
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         if (!_player.Any())
         {
             return;

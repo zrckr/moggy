@@ -18,9 +18,9 @@ public struct LevelRuntime()
     public int Score = 0;
 }
 
-public sealed class LevelRuntimeSystem : GameSystem, ILevelParticipant
+public sealed class LevelRuntimeGameSystem : GameSystem, IGameSystemGroupState
 {
-    private static readonly ILogger Logger = Serilog.Log.ForContext<LevelRuntimeSystem>();
+    private static readonly ILogger Logger = Serilog.Log.ForContext<LevelRuntimeGameSystem>();
 
     private LevelProperties _properties = null!;
 
@@ -30,7 +30,7 @@ public sealed class LevelRuntimeSystem : GameSystem, ILevelParticipant
         Registry.Create(new LevelRuntime());
     }
 
-    public void EnterLevel()
+    public void Enter()
     {
         ref var runtime = ref Registry.Singleton<LevelRuntime>();
         runtime.State = LevelState.Ready;
@@ -40,12 +40,6 @@ public sealed class LevelRuntimeSystem : GameSystem, ILevelParticipant
 
     public override void Update(Time time)
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        if (game.State != GameState.Level)
-        {
-            return;
-        }
-
         ref var runtime = ref Registry.Singleton<LevelRuntime>();
         switch (runtime.State)
         {
@@ -97,22 +91,10 @@ public sealed class LevelRuntimeSystem : GameSystem, ILevelParticipant
 
     private void UpdateVictoryState()
     {
-        ref var game = ref Registry.Singleton<GameRuntime>();
-        game.NextState = GameState.Score;
+        Game.TransitionTo(GameState.Score);
     }
 
     private void UpdateDefeatState()
-    {
-    }
-}
-
-public interface ILevelParticipant
-{
-    void EnterLevel()
-    {
-    }
-
-    void ExitLevel()
     {
     }
 }

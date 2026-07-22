@@ -11,9 +11,13 @@ public class Game : App
 {
     private static readonly ILogger Logger = Serilog.Log.ForContext<Game>();
 
-    private readonly List<GameSystem> _systems = new();
+    internal GameState State => _gameStates.State;
 
     private readonly Registry _registry = new();
+
+    private GameSystemGroup _gameSystems = null!;
+
+    private GameSystemGroup<GameState> _gameStates = null!;
 
     private AssetLoader _assets = null!;
 
@@ -73,34 +77,47 @@ public class Game : App
         _imgui = new ImGuiRenderer(this);
         _assets = new AssetLoader(this);
 
-        _systems.AddRange(
-            CreateSystem<GameRuntimeSystem>(),
-            CreateSystem<LevelRuntimeSystem>(),
-            CreateSystem<ViewportSystem>(),
-            CreateSystem<LevelSystem>(),
+        var levelSystems = new GameSystemGroup(
+            CreateSystem<LevelRuntimeGameSystem>(),
+            CreateSystem<LevelGameSystem>(),
             CreateSystem<ChaosSystem>(),
-            CreateSystem<PlayerSystem>(),
-            CreateSystem<AbilitiesSystem>(),
+            CreateSystem<PlayerGameSystem>(),
+            CreateSystem<AbilitiesGameSystem>(),
             CreateSystem<NormalSystem>(),
             CreateSystem<BigBoySystem>(),
             CreateSystem<MicroManSystem>(),
-            CreateSystem<NavigationSystem>(),
-            CreateSystem<EnemySystem>(),
+            CreateSystem<NavigationGameSystem>(),
+            CreateSystem<EnemyGameSystem>(),
             CreateSystem<BugSystem>(),
             CreateSystem<LevelMoverSystem>(),
-            CreateSystem<CameraFollowSystem>(),
+            CreateSystem<CameraFollowGameSystem>(),
             CreateSystem<CameraSystem>(),
             CreateSystem<SpriteSystem>(),
             CreateSystem<HudSystem>()
         );
 
-        foreach (var system in _systems)
-        {
-            system.Startup();
-        }
+        _gameStates = new GameSystemGroup<GameState>(
+            GameState.Level,
+            new Dictionary<GameState, GameSystemGroup>
+            {
+                [GameState.Level] = levelSystems,
+                [GameState.Score] = new(),
+                [GameState.Menu] = new()
+            });
 
-        EnterLevel();
+        _gameSystems = new GameSystemGroup(
+            CreateSystem<GameRuntimeSystem>(),
+            CreateSystem<ViewportSystem>(),
+            _gameStates);
+
+        _gameSystems.Startup();
+
         _tools = new ToolsHost(this, _registry, _assets);
+    }
+
+    internal void TransitionTo(GameState state)
+    {
+        _gameStates.TransitionTo(state);
     }
 
     protected override void Update()
@@ -111,45 +128,20 @@ public class Game : App
             game.IsPaused = !game.IsPaused;
         }
 
-        ref var level = ref _registry.Singleton<LevelRuntime>();
-        if (game.State == GameState.Level &&
+        if (State == GameState.Level &&
             Input.Keyboard.Pressed(Keys.F5) &&
-            level.State == LevelState.Defeat)
+            _registry.Singleton<LevelRuntime>().State == LevelState.Defeat)
         {
-            ExitLevel();
-            EnterLevel();
+            _gameStates.Restart();
             return;
         }
 
-        if (game is { State: GameState.Level, IsPaused: true })
+        if (State == GameState.Level && game.IsPaused)
         {
             return;
         }
 
-        var previousState = game.State;
-        foreach (var system in _systems)
-        {
-            system.Update(Time);
-        }
-
-        // Apply lifecycle changes after systems finish processing the current state.
-        if (game.NextState is { } nextState)
-        {
-            game.NextState = null;
-            if (previousState != nextState)
-            {
-                if (previousState == GameState.Level)
-                {
-                    ExitLevel();
-                }
-
-                game.State = nextState;
-                if (nextState == GameState.Level)
-                {
-                    EnterLevel();
-                }
-            }
-        }
+        _gameSystems.Update(Time);
     }
 
     protected override void Render()
@@ -162,10 +154,7 @@ public class Game : App
         _screen.Clear(Color.Black);
         _batcher.PushScissor(viewport.ContentBounds);
         _batcher.PushMatrix(camera.WorldToVirtual);
-        foreach (var system in _systems)
-        {
-            system.Render(Time);
-        }
+        _gameSystems.Render(Time);
 
         _batcher.PopMatrix();
         _batcher.PopScissor();
@@ -196,39 +185,11 @@ public class Game : App
 
     protected override void Shutdown()
     {
-        ExitLevel();
-        for (var index = _systems.Count - 1; index >= 0; index--)
-        {
-            _systems[index].Shutdown();
-        }
-
-        _systems.Clear();
+        _gameSystems.Shutdown();
         _assets.Dispose();
         _imgui.Dispose();
         _screen.Dispose();
         _batcher.Dispose();
-    }
-
-    private void EnterLevel()
-    {
-        foreach (var system in _systems)
-        {
-            if (system is ILevelParticipant participant)
-            {
-                participant.EnterLevel();
-            }
-        }
-    }
-
-    private void ExitLevel()
-    {
-        for (var index = _systems.Count - 1; index >= 0; index--)
-        {
-            if (_systems[index] is ILevelParticipant participant)
-            {
-                participant.ExitLevel();
-            }
-        }
     }
 
     private T CreateSystem<T>() where T : GameSystem, new()
