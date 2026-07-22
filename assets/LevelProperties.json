@@ -23,7 +23,8 @@
   "Maze": {
     "Seed": 17,
     "Erosion": 0.33333334,
-    "Exits": 4,
+    "ExitPairCount": 2,
+    "ExitTravelDistance": 3,
     "MaxHallway": 3,
     "MaxDeadEnd": 3,
     "MaxRepairs": 12,

@@ -2,7 +2,7 @@
 
 namespace Moggy.Mazegen;
 
-internal enum Direction
+public enum Direction
 {
     North,
     East,

@@ -140,26 +140,27 @@ public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
 
         var bestDistance = distance;
         var bestDirection = default(FaceDirection);
+        var bestMove = default(LevelMove);
         var reverseDirection = enemy.Direction.Opposite();
-        var reverseCell = default(Cell);
+        var reverseMove = default(LevelMove);
         var canReverse = false;
 
         foreach (var direction in Enum.GetValues<FaceDirection>())
         {
-            var target = transform.Position + direction;
-            if (!level.IsWalkable(target) || _claimedCells.Contains(target))
+            if (!level.TryResolveMove(transform.Position, direction, out var move) ||
+                _claimedCells.Contains(move.To))
             {
                 continue;
             }
 
             if (direction == reverseDirection)
             {
-                reverseCell = target;
+                reverseMove = move;
                 canReverse = true;
                 continue;
             }
 
-            var targetDistance = navigation.GetDistance(in level, target);
+            var targetDistance = navigation.GetDistance(in level, move.To);
             if (targetDistance == Navigation.Unreachable || targetDistance >= bestDistance)
             {
                 continue;
@@ -167,11 +168,12 @@ public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
 
             bestDistance = targetDistance;
             bestDirection = direction;
+            bestMove = move;
         }
 
         if (bestDistance != distance)
         {
-            StartMove(entity, ref enemy, transform.Position, bestDirection, transform.Position + bestDirection);
+            StartMove(entity, ref enemy, transform.Position, bestDirection, bestMove);
             return;
         }
 
@@ -181,7 +183,7 @@ public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
         }
 
         // A dead end or reservation leaves reversing as the only viable route.
-        StartMove(entity, ref enemy, transform.Position, reverseDirection, reverseCell);
+        StartMove(entity, ref enemy, transform.Position, reverseDirection, reverseMove);
     }
 
     private bool TryStartTraceMove(
@@ -192,12 +194,38 @@ public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
         in LevelTransform transform)
     {
         if (!navigation.TryGetTraceSuccessor(transform.Position, out var target) ||
-            !level.TryRaycast(transform.Position, target, out var direction))
+            !TryResolveTraceDirection(in level, transform.Position, target, out var direction))
         {
             return false;
         }
 
         return TryStartDirectedMove(entity, ref enemy, in level, in transform, direction);
+    }
+
+    private static bool TryResolveTraceDirection(
+        in Level level,
+        Cell origin,
+        Cell target,
+        out FaceDirection direction)
+    {
+        foreach (var candidate in Enum.GetValues<FaceDirection>())
+        {
+            if (!level.TryResolveMove(origin, candidate, out var move))
+            {
+                continue;
+            }
+
+            if (move.To != target)
+            {
+                continue;
+            }
+
+            direction = candidate;
+            return true;
+        }
+
+        direction = default;
+        return false;
     }
 
     private bool TryStartDirectedMove(
@@ -212,25 +240,31 @@ public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
             return false;
         }
 
-        var target = transform.Position + direction;
-        if (!level.IsWalkable(target) || _claimedCells.Contains(target))
+        if (!level.TryResolveMove(transform.Position, direction, out var move) ||
+            _claimedCells.Contains(move.To))
         {
             return false;
         }
 
-        StartMove(entity, ref enemy, transform.Position, direction, target);
+        StartMove(entity, ref enemy, transform.Position, direction, move);
         return true;
     }
 
-    private void StartMove(Entity entity, ref Enemy enemy, Cell from, FaceDirection direction, Cell targetCell)
+    private void StartMove(
+        Entity entity,
+        ref Enemy enemy,
+        Cell from,
+        FaceDirection direction,
+        LevelMove move)
     {
         enemy.Direction = direction;
-        _claimedCells.Add(targetCell);
+        _claimedCells.Add(move.To);
 
         Registry.Set(entity, new LevelMover
         {
             From = from,
-            To = targetCell,
+            To = move.To,
+            VisualWrapTo = move.VisualWrapTo,
             Speed = enemy.MovementSpeed
         });
     }

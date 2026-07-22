@@ -97,8 +97,9 @@ public class Game : App
             CreateSystem<NavigationGameSystem>(),
             CreateSystem<EnemyGameSystem>(),
             CreateSystem<BugSystem>(),
+            CreateSystem<CameraPathSystem>(),
             CreateSystem<LevelMoverSystem>(),
-            CreateSystem<CameraFollowGameSystem>(),
+            CreateSystem<CameraFollowSystem>(),
             CreateSystem<CameraSystem>(),
             CreateSystem<SpriteSystem>(),
             CreateSystem<HudSystem>()

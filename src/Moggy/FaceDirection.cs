@@ -99,6 +99,18 @@ public static class FaceDirectionExtensions
         return null;
     }
 
+    public static FaceDirection ToFaceDirection(this Mazegen.Direction direction)
+    {
+        return direction switch
+        {
+            Mazegen.Direction.North => FaceDirection.Up,
+            Mazegen.Direction.East => FaceDirection.Right,
+            Mazegen.Direction.South => FaceDirection.Down,
+            Mazegen.Direction.West => FaceDirection.Left,
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+        };
+    }
+
     public static string GetAnimationName(this FaceDirection faceDirection)
     {
         return faceDirection switch

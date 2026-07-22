@@ -99,6 +99,18 @@ public sealed class NavigationGameSystem : GameSystem, IGameSystemGroupState
         ref var transform = ref Registry.Get<LevelTransform>(_target.Single());
         ref var navigation = ref Registry.Singleton<Navigation>();
 
+        // Keep the last valid target while the player crosses outside a wrap exit.
+        if (!level.Contains(transform.Position))
+        {
+            return;
+        }
+
+        // The paired exit is an animation waypoint, not a navigation step.
+        if (IsIntermediateWrapExit(in navigation, in level, transform.Position))
+        {
+            return;
+        }
+
         navigation.TryRecord(transform.Position);
 
         var target = navigation.GetOldestTraceCell();
@@ -108,6 +120,31 @@ public sealed class NavigationGameSystem : GameSystem, IGameSystemGroupState
         }
 
         Rebuild(ref navigation, in level, target);
+    }
+
+    private static bool IsIntermediateWrapExit(in Navigation navigation, in Level level, Cell cell)
+    {
+        if (level.GetTile(cell) != Mazegen.Tile.Exit)
+        {
+            return false;
+        }
+
+        var trace = navigation.GetTrace();
+        var previous = trace[^1];
+        foreach (var direction in Enum.GetValues<FaceDirection>())
+        {
+            if (!level.TryGetWrap(previous, direction, out var wrap))
+            {
+                continue;
+            }
+
+            if (wrap.DestinationExit == cell)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void Enter()
@@ -145,13 +182,18 @@ public sealed class NavigationGameSystem : GameSystem, IGameSystemGroupState
 
             foreach (var direction in Enum.GetValues<FaceDirection>())
             {
-                var next = cell + direction;
-                if (level.IsWalkable(next) &&
-                    navigation.GetDistance(in level, next) == Navigation.Unreachable)
+                if (!level.TryResolveMove(cell, direction, out var move))
                 {
-                    navigation.Distances[(next.Row * level.Columns) + next.Column] = distance + 1;
-                    cells.Enqueue(next);
+                    continue;
                 }
+
+                if (navigation.GetDistance(in level, move.To) != Navigation.Unreachable)
+                {
+                    continue;
+                }
+
+                navigation.Distances[(move.To.Row * level.Columns) + move.To.Column] = distance + 1;
+                cells.Enqueue(move.To);
             }
         }
     }

@@ -8,7 +8,9 @@ public sealed record MazeProperties
 
     public float Erosion { get; init; } = 1f / 3f;
 
-    public int Exits { get; init; } = 4;
+    public int ExitPairCount { get; init; } = 2;
+
+    public int ExitTravelDistance { get; init; } = 3;
 
     public int MaxHallway { get; init; } = 3;
 
@@ -23,12 +25,21 @@ public sealed record MazeProperties
 
 public static class MazeGenerator
 {
+    private const int ExitCountPerPair = 2;
+
+    private const int BoundaryAxisCount = 2;
+
     private const int WallErosionSeedSalt = 0xE20510;
 
     private const float DeadEndRepairBaseScore = 3f;
 
     public static Maze Generate(IReadOnlyCollection<Point2> region, MazeProperties options)
     {
+        if (options.ExitTravelDistance < 1)
+        {
+            throw new ArgumentException("Exit travel distance must be positive.");
+        }
+
         var tiling = PentominoTiling.Generate(region, new Random(options.Seed));
         if (tiling.Count == 0)
         {
@@ -36,22 +47,27 @@ public static class MazeGenerator
         }
 
         var topology = PieceTopology.Build(tiling);
-        var walls = GenerateWalls(topology, options, options.Seed);
+        var plan = GenerateWalls(topology, options, options.Seed);
 
-        return MazeMaterializer.Materialize(topology, walls);
+        return MazeMaterializer.Materialize(
+            topology,
+            plan.Walls,
+            plan.ExitPairs,
+            options.ExitTravelDistance);
     }
 
-    private static WallPlan GenerateWalls(PieceTopology topology, MazeProperties options, int seed)
+    private static MazePlan GenerateWalls(PieceTopology topology, MazeProperties options, int seed)
     {
         // The maze is first built as a pentomino-piece graph, then converted into unit-cell walls.
         var random = new Random(seed);
         var connections = new SpanningTreeBuilder(topology, options, random).Build();
         connections = RepairLongDeadEnds(topology, connections, options, random);
         connections = AddUsefulLoops(topology, connections, options.ExtraLoops, random);
-        var exits = ChooseExits(topology, options.Exits, random);
+        var exitPairs = ChooseExitPairs(topology, options.ExitPairCount, random);
+        var exits = exitPairs.SelectMany(pair => new[] { pair.First, pair.Second }).ToArray();
         var walls = BuildWalls(topology, connections, exits, options, new Random(seed ^ WallErosionSeedSalt));
 
-        if (OuterOpeningCount(topology, walls) != exits.Count)
+        if (OuterOpeningCount(topology, walls) != options.ExitPairCount * ExitCountPerPair)
         {
             throw new InvalidOperationException("Outer boundary changed somewhere other than an exit.");
         }
@@ -61,7 +77,7 @@ public static class MazeGenerator
             throw new InvalidOperationException("Unit-cell reachability validation failed.");
         }
 
-        return walls;
+        return new MazePlan(walls, exitPairs);
     }
 
     private static List<PieceConnection> RepairLongDeadEnds(
@@ -336,67 +352,59 @@ public static class MazeGenerator
         }
     }
 
-    private static IReadOnlyList<OuterWall> ChooseExits(PieceTopology topology, int count, Random random)
+    private static IReadOnlyList<OuterExitPair> ChooseExitPairs(
+        PieceTopology topology,
+        int count,
+        Random random)
     {
-        var ordered = OuterWallCandidates(topology)
-            .OrderBy(wall => PerimeterPosition(topology, wall))
-            .ToArray();
-        count = Math.Max(0, Math.Min(count, ordered.Length));
-        if (count == 0)
+        if (count < 0)
         {
-            return Array.Empty<OuterWall>();
+            throw new ArgumentOutOfRangeException(nameof(count), count, "Exit pair count cannot be negative.");
         }
 
-        var exits = new List<OuterWall>();
-        for (var sector = 0; sector < count; sector++)
+        var horizontalRows = Enumerable.Range(0, topology.Rows).ToArray();
+        var verticalColumns = Enumerable.Range(0, topology.Columns).ToArray();
+        if (count > horizontalRows.Length + verticalColumns.Length)
         {
-            var start = (int)Math.Round(sector * ordered.Length / (float)count);
-            var end = (int)Math.Round((sector + 1) * ordered.Length / (float)count);
-            var sectorWalls = ordered[start..Math.Max(start + 1, end)];
-            var usedPieces = exits.Select(exit => exit.Piece).ToHashSet();
-            var preferred = sectorWalls
-                .Where(wall => !usedPieces.Contains(wall.Piece))
-                .ToArray();
-
-            exits.Add(Choose(preferred.Length > 0 ? preferred : sectorWalls, random));
+            throw new InvalidOperationException("The maze boundary does not have enough positions for exit pairs.");
         }
 
-        return exits
-            .OrderBy(wall => PerimeterPosition(topology, wall))
-            .ToArray();
-    }
+        random.Shuffle(horizontalRows);
+        random.Shuffle(verticalColumns);
 
-    private static IEnumerable<OuterWall> OuterWallCandidates(PieceTopology topology)
-    {
-        for (var row = 0; row < topology.Rows; row++)
+        var pairs = new List<OuterExitPair>(count);
+        var horizontalIndex = 0;
+        var verticalIndex = 0;
+        var chooseHorizontal = random.Next(BoundaryAxisCount) == 0;
+        while (pairs.Count < count)
         {
-            yield return new OuterWall(topology.PieceGrid[row, 0], new Point2(row, 0), Direction.West);
-            yield return new OuterWall(
-                topology.PieceGrid[row, topology.Columns - 1],
-                new Point2(row, topology.Columns - 1),
-                Direction.East);
+            if ((chooseHorizontal && horizontalIndex < horizontalRows.Length) ||
+                verticalIndex >= verticalColumns.Length)
+            {
+                var row = horizontalRows[horizontalIndex++];
+                pairs.Add(new OuterExitPair(
+                    new OuterWall(topology.PieceGrid[row, 0], new Point2(row, 0), Direction.West),
+                    new OuterWall(
+                        topology.PieceGrid[row, topology.Columns - 1],
+                        new Point2(row, topology.Columns - 1),
+                        Direction.East)));
+            }
+            else
+            {
+                var column = verticalColumns[verticalIndex++];
+                pairs.Add(new OuterExitPair(
+                    new OuterWall(topology.PieceGrid[0, column], new Point2(0, column), Direction.North),
+                    new OuterWall(
+                        topology.PieceGrid[topology.Rows - 1, column],
+                        new Point2(topology.Rows - 1, column),
+                        Direction.South)));
+            }
+
+            // Alternate axes so multiple pairs are distributed around the boundary.
+            chooseHorizontal = !chooseHorizontal;
         }
 
-        for (var column = 0; column < topology.Columns; column++)
-        {
-            yield return new OuterWall(topology.PieceGrid[0, column], new Point2(0, column), Direction.North);
-            yield return new OuterWall(
-                topology.PieceGrid[topology.Rows - 1, column],
-                new Point2(topology.Rows - 1, column),
-                Direction.South);
-        }
-    }
-
-    private static float PerimeterPosition(PieceTopology topology, OuterWall wall)
-    {
-        return wall.Side switch
-        {
-            Direction.West => wall.Cell.X + 0.5f,
-            Direction.South => topology.Rows + wall.Cell.Y + 0.5f,
-            Direction.East => topology.Rows + topology.Columns + (topology.Rows - wall.Cell.X - 0.5f),
-            Direction.North => (2f * topology.Rows) + topology.Columns + (topology.Columns - wall.Cell.Y - 0.5f),
-            _ => throw new ArgumentOutOfRangeException(nameof(wall), wall, null)
-        };
+        return pairs;
     }
 
     private static bool AllCellsReachable(PieceTopology topology, WallPlan plan)
@@ -536,6 +544,10 @@ public static class MazeGenerator
 }
 
 internal sealed record WallPlan(bool[,] Horizontal, bool[,] Vertical);
+
+internal sealed record MazePlan(WallPlan Walls, IReadOnlyList<OuterExitPair> ExitPairs);
+
+internal readonly record struct OuterExitPair(OuterWall First, OuterWall Second);
 
 internal readonly record struct OuterWall(int Piece, Point2 Cell, Direction Side);
 

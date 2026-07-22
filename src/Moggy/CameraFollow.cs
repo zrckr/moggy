@@ -7,22 +7,29 @@ namespace Moggy;
 public struct CameraFollow
 {
     public Entity Target;
-
     public Vector2 DragSize;
 }
 
-public sealed class CameraFollowGameSystem : GameSystem, IGameSystemGroupState
+public sealed class CameraFollowSystem : GameSystem, IGameSystemGroupState
 {
     private static readonly Vector2 DefaultDragSize = new(96f, 80f);
 
-    private Query _camera = null!;
+    private Query _cameras = null!;
+
+    private Query _followingCamera = null!;
 
     private Query _player = null!;
 
     public override void Startup()
     {
-        _camera = Registry.Query()
+        _cameras = Registry.Query()
             .Include<Camera>()
+            .Include<Viewport>()
+            .Build();
+
+        _followingCamera = Registry.Query()
+            .Include<Camera>()
+            .Include<CameraFollow>()
             .Include<Viewport>()
             .Build();
 
@@ -35,7 +42,12 @@ public sealed class CameraFollowGameSystem : GameSystem, IGameSystemGroupState
 
     public override void Update(Time time)
     {
-        var cameraEntity = _camera.Single();
+        if (!_followingCamera.Any())
+        {
+            return;
+        }
+
+        var cameraEntity = _followingCamera.Single();
         EnsureFollowTarget(cameraEntity);
 
         ref var camera = ref Registry.Get<Camera>(cameraEntity);
@@ -71,7 +83,7 @@ public sealed class CameraFollowGameSystem : GameSystem, IGameSystemGroupState
 
     public void Enter()
     {
-        var camera = _camera.Single();
+        var camera = _cameras.Single();
         var target = _player.Single();
         if (Registry.Has<CameraFollow>(camera))
         {
@@ -90,8 +102,16 @@ public sealed class CameraFollowGameSystem : GameSystem, IGameSystemGroupState
 
     public void Exit()
     {
-        var camera = _camera.Single();
-        Registry.Remove<CameraFollow>(camera);
+        if (!_cameras.Any())
+        {
+            return;
+        }
+
+        var camera = _cameras.Single();
+        if (Registry.Has<CameraFollow>(camera))
+        {
+            Registry.Remove<CameraFollow>(camera);
+        }
     }
 
     private void EnsureFollowTarget(Entity camera)

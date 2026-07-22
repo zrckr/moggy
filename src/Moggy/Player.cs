@@ -96,8 +96,7 @@ public sealed class PlayerGameSystem : GameSystem, IGameSystemGroupState
 
     private bool TryStartMove(Entity entity, in Level level, in LevelTransform levelTransform, FaceDirection direction)
     {
-        var target = levelTransform.Position + direction;
-        if (!level.IsWalkable(target))
+        if (!level.TryResolveMove(levelTransform.Position, direction, out var move))
         {
             return false;
         }
@@ -105,7 +104,8 @@ public sealed class PlayerGameSystem : GameSystem, IGameSystemGroupState
         Registry.Set(entity, new LevelMover
         {
             From = levelTransform.Position,
-            To = target,
+            To = move.To,
+            VisualWrapTo = move.VisualWrapTo,
             Progress = 0f,
             Speed = _properties.MovementSpeed
         });
@@ -137,7 +137,7 @@ public sealed class PlayerGameSystem : GameSystem, IGameSystemGroupState
         }
 
         player.Direction = requested.Value;
-        if (!level.IsWalkable(levelTransform.Position + requested.Value))
+        if (!level.TryResolveMove(levelTransform.Position, requested.Value, out _))
         {
             direction = default;
             return false;

@@ -24,6 +24,17 @@ public sealed class CameraTool : ToolSystem
 
     public override void Draw(Time time)
     {
+        if (!_camera.Any())
+        {
+            if (ImGui.Begin(Title, ref IsOpen, ImGuiWindowFlags.AlwaysAutoResize))
+            {
+                ImGui.Text("Camera path active");
+            }
+
+            ImGui.End();
+            return;
+        }
+
         var entity = _camera.Single();
         ref var camera = ref Registry.Get<Camera>(entity);
         ref var viewport = ref Registry.Get<Viewport>(entity);

@@ -26,7 +26,7 @@ Keep Collect 'Em All, bosses, progression, and final content out of this work.
 - [ ] Choose and store a safe player spawn instead of using the maze centre.
 - [ ] Choose visible enemy spawners with path-distance separation from the
   player spawn.
-- [ ] Pair the generated boundary openings as wrap exits for all moving actors.
+- [x] Pair the generated boundary openings as wrap exits for all moving actors.
 - [ ] Place 12 bugs across separate maze regions outside spawn safety areas.
 - [ ] Reject a placement when required content is unreachable or too clustered.
 

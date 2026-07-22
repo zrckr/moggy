@@ -35,20 +35,59 @@ public sealed record LevelProperties
 
 public readonly record struct Cell(int Column, int Row)
 {
-    public static Cell operator +(Cell cell, FaceDirection direction)
+    public FaceDirection DirectionTo(Cell to)
     {
-        var point2 = direction.ToPoint2();
-        return new Cell(cell.Column + point2.X, cell.Row + point2.Y);
+        if (Column < to.Column) return FaceDirection.Right;
+        if (Column > to.Column) return FaceDirection.Left;
+        if (Row < to.Row) return FaceDirection.Down;
+        if (Row > to.Row) return FaceDirection.Up;
+        throw new InvalidOperationException("A level move must change cells.");
+    }
+
+    public int ManhattanDistance(Cell to)
+    {
+        return Math.Abs(Column - to.Column) + Math.Abs(Row - to.Row);
+    }
+
+    public static Cell operator +(Cell cell, Point2 direction)
+    {
+        return new Cell(cell.Column + direction.X, cell.Row + direction.Y);
     }
 }
 
-public readonly struct Level(Maze maze, int cellWidth, int cellHeight)
+public readonly record struct LevelMove(Cell To, Cell? VisualWrapTo = null);
+
+public readonly record struct LevelWrap(Cell SourceTeleport, Cell DestinationTeleport, Cell DestinationExit);
+
+public struct LevelDebug()
 {
-    public readonly Maze Maze = maze;
+    public bool ShowTiles = false;
+}
 
-    public readonly int CellWidth = cellWidth;
+public readonly struct Level
+{
+    public readonly Maze Maze;
 
-    public readonly int CellHeight = cellHeight;
+    public readonly int CellWidth;
+
+    public readonly int CellHeight;
+
+    private readonly Dictionary<(Cell Cell, FaceDirection Direction), LevelWrap> _wraps;
+
+    public Level(Maze maze, int cellWidth, int cellHeight)
+    {
+        Maze = maze;
+        CellWidth = cellWidth;
+        CellHeight = cellHeight;
+        _wraps = new Dictionary<(Cell, FaceDirection), LevelWrap>();
+        foreach (var pair in maze.ExitPairs)
+        {
+            AddWrap(_wraps, pair.First.FirstLane, pair.First.OutwardDirection, pair.Second.FirstLane);
+            AddWrap(_wraps, pair.First.SecondLane, pair.First.OutwardDirection, pair.Second.SecondLane);
+            AddWrap(_wraps, pair.Second.FirstLane, pair.Second.OutwardDirection, pair.First.FirstLane);
+            AddWrap(_wraps, pair.Second.SecondLane, pair.Second.OutwardDirection, pair.First.SecondLane);
+        }
+    }
 
     public int Rows => Maze.Rows;
 
@@ -72,7 +111,56 @@ public readonly struct Level(Maze maze, int cellWidth, int cellHeight)
 
     public bool IsWalkable(Cell cell)
     {
-        return Contains(cell) && GetTile(cell) is Tile.Empty or Tile.Floor;
+        return Contains(cell) && GetTile(cell) is Tile.Empty or Tile.Floor or Tile.Exit;
+    }
+
+    public bool TryResolveMove(Cell origin, FaceDirection direction, out LevelMove move)
+    {
+        var adjacent = origin + direction.ToPoint2();
+        if (IsWalkable(adjacent))
+        {
+            move = new LevelMove(adjacent);
+            return true;
+        }
+
+        if (_wraps.TryGetValue((origin, direction), out var wrap))
+        {
+            var destination = wrap.DestinationExit + direction.ToPoint2();
+            if (!IsWalkable(destination))
+            {
+                throw new InvalidOperationException("A paired exit must lead to a walkable interior cell.");
+            }
+
+            move = new LevelMove(destination, adjacent);
+            return true;
+        }
+
+        move = default;
+        return false;
+    }
+
+    public bool TryGetWrap(Cell exit, FaceDirection outwardDirection, out LevelWrap wrap)
+    {
+        return _wraps.TryGetValue((exit, outwardDirection), out wrap);
+    }
+
+    private static void AddWrap(
+        Dictionary<(Cell Cell, FaceDirection Direction), LevelWrap> wraps,
+        MazeExitLane source,
+        Direction direction,
+        MazeExitLane destination)
+    {
+        wraps.Add(
+            (ToMazeCell(source.ExitCell), direction.ToFaceDirection()),
+            new LevelWrap(
+                ToMazeCell(source.TeleportCell),
+                ToMazeCell(destination.TeleportCell),
+                ToMazeCell(destination.ExitCell)));
+    }
+
+    private static Cell ToMazeCell(Point2 point)
+    {
+        return new Cell(point.Y, point.X);
     }
 
     public bool TryRaycast(Cell origin, Cell target, out FaceDirection direction)
@@ -95,7 +183,7 @@ public readonly struct Level(Maze maze, int cellWidth, int cellHeight)
             return false;
         }
 
-        for (var cell = origin + direction; cell != target; cell += direction)
+        for (var cell = origin + direction.ToPoint2(); cell != target; cell += direction.ToPoint2())
         {
             if (!IsWalkable(cell))
             {
@@ -165,33 +253,61 @@ public sealed class LevelGameSystem : GameSystem, IGameSystemGroupState
 
     private ImageAsset _wall = null!;
 
+    private ImageAsset _debugTiles = null!;
+
+    private Subtexture[] _tileSprites = [];
+
     private Entity _levelEntity = Entity.Invalid;
 
     public override void Startup()
     {
         _properties = Assets.LoadJson<LevelProperties>("LevelProperties");
         _wall = Assets.Load<ImageAsset>("GridWall");
+        _debugTiles = Assets.Load<ImageAsset>("Level/DebugTiles");
+        Registry.Create(new LevelDebug());
+
+        var tileCount = Enum.GetValues<Tile>().Length;
+        if (_debugTiles.Width % tileCount != 0)
+        {
+            throw new InvalidOperationException("The debug tile strip width must be divisible by the tile count.");
+        }
+
+        var tileWidth = _debugTiles.Width / tileCount;
+        _tileSprites = new Subtexture[tileCount];
+        for (var index = 0; index < tileCount; index++)
+        {
+            _tileSprites[index] = new Subtexture(
+                _debugTiles.Texture,
+                new Rect(index * tileWidth, 0, tileWidth, _debugTiles.Height));
+        }
     }
 
     public override void Render(Time time)
     {
         ref var level = ref Registry.Singleton<Level>();
+        ref var debug = ref Registry.Singleton<LevelDebug>();
 
         for (var row = 0; row < level.Rows; row++)
         {
             for (var column = 0; column < level.Columns; column++)
             {
                 var cell = new Cell(column, row);
-                switch (level.Maze[row, column])
+                var tile = level.GetTile(cell);
+                if (tile is Tile.Wall or Tile.Corner)
                 {
-                    case Tile.Wall:
-                    case Tile.Corner:
-                        if (level.Contains(cell))
-                        {
-                            Batcher.Image(_wall.Texture, level.CellToWorld(cell), Color.White);
-                        }
+                    Batcher.Image(_wall.Texture, level.CellToWorld(cell), Color.White);
+                }
 
-                        break;
+                if (debug.ShowTiles)
+                {
+                    // Draw the generated tile type over the normal level presentation.
+                    var tileSprite = _tileSprites[(int)tile];
+                    var scale = new Vector2(
+                        level.CellWidth / tileSprite.Width,
+                        level.CellHeight / tileSprite.Height);
+
+                    Batcher.Image(tileSprite, level.CellToWorld(cell), Vector2.Zero, scale, 0f,
+                        Color.White with { A = 64 });
                 }
             }
         }
@@ -200,6 +316,7 @@ public sealed class LevelGameSystem : GameSystem, IGameSystemGroupState
     public override void Shutdown()
     {
         _wall.Dispose();
+        _debugTiles.Dispose();
     }
 
     public void Enter()
