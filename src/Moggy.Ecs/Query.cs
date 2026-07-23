@@ -1,28 +1,74 @@
 ﻿namespace Moggy.Ecs;
 
 /// <summary>
-/// Enumerates entities that match a component filter.
+/// Builds and enumerates entities that match a component filter.
 /// </summary>
 public sealed class Query
 {
     private readonly Registry _registry;
 
-    private readonly IEntitySource _candidates;
+    private IEntitySource _candidates;
 
-    private readonly IReadOnlyList<IComponentStorage> _included;
+    private bool _frozen;
 
-    private readonly IReadOnlyList<IComponentStorage> _excluded;
+    private readonly List<IComponentStorage> _included = new();
 
-    internal Query(
-        Registry registry,
-        IEntitySource candidates,
-        IReadOnlyList<IComponentStorage> included,
-        IReadOnlyList<IComponentStorage> excluded)
+    private readonly List<IComponentStorage> _excluded = new();
+
+    internal Query(Registry registry)
     {
         _registry = registry;
-        _candidates = candidates;
-        _included = included;
-        _excluded = excluded;
+        _candidates = registry.Entities;
+    }
+
+    /// <summary>
+    /// Requires entities to have a component of type <typeparamref name="T"/>.
+    /// </summary>
+    public Query With<T>() where T : struct
+    {
+        EnsureMutable();
+
+        var storage = _registry.GetOrCreateStorage<T>();
+        if (_excluded.Contains(storage))
+        {
+            throw new InvalidOperationException($"{typeof(T)} is already excluded.");
+        }
+
+        if (_included.Contains(storage))
+        {
+            return this;
+        }
+
+        _included.Add(storage);
+
+        // Scan the smallest included storage to reduce membership checks.
+        if (storage.Count < _candidates.Count)
+        {
+            _candidates = storage;
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Rejects entities that have a component of type <typeparamref name="T"/>.
+    /// </summary>
+    public Query Without<T>() where T : struct
+    {
+        EnsureMutable();
+
+        var storage = _registry.GetOrCreateStorage<T>();
+        if (_included.Contains(storage))
+        {
+            throw new InvalidOperationException($"{typeof(T)} is already included.");
+        }
+
+        if (!_excluded.Contains(storage))
+        {
+            _excluded.Add(storage);
+        }
+
+        return this;
     }
 
     /// <summary>
@@ -30,6 +76,7 @@ public sealed class Query
     /// </summary>
     public Enumerator GetEnumerator()
     {
+        _frozen = true;
         _registry.BeginEnumeration();
         return new Enumerator(this);
     }
@@ -187,6 +234,14 @@ public sealed class Query
         }
 
         return collected;
+    }
+
+    private void EnsureMutable()
+    {
+        if (_frozen)
+        {
+            throw new InvalidOperationException("Query filters cannot change after enumeration!");
+        }
     }
 
     /// <summary>

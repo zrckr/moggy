@@ -25,10 +25,7 @@ public sealed class PieceSystem : GameSystem
 
     public override void Startup()
     {
-        _pieces = Registry.Query()
-            .Include<Piece>()
-            .Include<Sprite>()
-            .Build();
+        _pieces = Registry.Query<Piece, Sprite>();
     }
 
     public override void Update(Time time)

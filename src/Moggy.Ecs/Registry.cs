@@ -15,6 +15,8 @@ public sealed class Registry
     /// </summary>
     public int Size => _entities.Count;
 
+    internal IEntitySource Entities => _entities;
+
     private readonly EntityStorage _entities = new();
 
     private readonly Dictionary<Type, IComponentStorage> _storages = new();
@@ -271,6 +273,33 @@ public sealed class Registry
     }
 
     /// <summary>
+    /// Adds a frame-scoped event component for all later systems to read.
+    /// </summary>
+    /// <remarks>
+    /// Events emitted during query enumeration are applied after that enumeration
+    /// completes. Emitting the same event type twice on one entity is not supported.
+    /// </remarks>
+    public void Emit<T>(Entity entity, in T eventComponent) where T : struct, IEvent
+    {
+        EnsureAlive(entity);
+        if (Has<T>(entity))
+        {
+            throw new InvalidOperationException(
+                $"Entity {entity.Id} already has event component {typeof(T)}.");
+        }
+
+        // Structural changes are deferred so producers can emit while querying.
+        if (_activeEnumerators != 0)
+        {
+            var capturedEvent = eventComponent;
+            _deferredActions.Add(() => Emit(entity, in capturedEvent));
+            return;
+        }
+
+        Set(entity, eventComponent);
+    }
+
+    /// <summary>
     /// Adds a tag component of type <typeparamref name="T"/> to an entity.
     /// </summary>
     /// <remarks>
@@ -434,43 +463,118 @@ public sealed class Registry
     }
 
     /// <summary>
-    /// Tries to retrieve and remove a component from an entity if the entity has the component.
+    /// Starts building a query against this registry.
     /// </summary>
-    public bool TryRemove<T>(Entity entity, out T? component) where T : struct
+    public Query Query()
     {
-        if (!Has<T>(entity))
-        {
-            component = null;
-            return false;
-        }
-
-        component = Get<T>(entity);
-        Remove<T>(entity);
-        return true;
+        return new Query(this);
     }
 
     /// <summary>
-    /// Starts building a query against this registry.
+    /// Creates a query requiring component type <typeparamref name="T1"/>.
     /// </summary>
-    public QueryBuilder Query()
+    public Query Query<T1>()
+        where T1 : struct
     {
-        return new QueryBuilder(this);
+        return Query().With<T1>();
     }
 
-    internal Query BuildQuery(
-        IReadOnlyList<IComponentStorage> included,
-        IReadOnlyList<IComponentStorage> excluded)
+    /// <summary>
+    /// Creates a query requiring component types <typeparamref name="T1"/> and
+    /// <typeparamref name="T2"/>.
+    /// </summary>
+    public Query Query<T1, T2>()
+        where T1 : struct
+        where T2 : struct
     {
-        IEntitySource candidates = _entities;
-        foreach (var storage in included)
-        {
-            if (storage.Count < candidates.Count)
-            {
-                candidates = storage;
-            }
-        }
+        return Query<T1>().With<T2>();
+    }
 
-        return new Query(this, candidates, included, excluded);
+    /// <summary>
+    /// Creates a query requiring component types <typeparamref name="T1"/> through
+    /// <typeparamref name="T3"/>.
+    /// </summary>
+    public Query Query<T1, T2, T3>()
+        where T1 : struct
+        where T2 : struct
+        where T3 : struct
+    {
+        return Query<T1, T2>().With<T3>();
+    }
+
+    /// <summary>
+    /// Creates a query requiring component types <typeparamref name="T1"/> through
+    /// <typeparamref name="T4"/>.
+    /// </summary>
+    public Query Query<T1, T2, T3, T4>()
+        where T1 : struct
+        where T2 : struct
+        where T3 : struct
+        where T4 : struct
+    {
+        return Query<T1, T2, T3>().With<T4>();
+    }
+
+    /// <summary>
+    /// Creates a query requiring component types <typeparamref name="T1"/> through
+    /// <typeparamref name="T5"/>.
+    /// </summary>
+    public Query Query<T1, T2, T3, T4, T5>()
+        where T1 : struct
+        where T2 : struct
+        where T3 : struct
+        where T4 : struct
+        where T5 : struct
+    {
+        return Query<T1, T2, T3, T4>().With<T5>();
+    }
+
+    /// <summary>
+    /// Creates a query requiring component types <typeparamref name="T1"/> through
+    /// <typeparamref name="T6"/>.
+    /// </summary>
+    public Query Query<T1, T2, T3, T4, T5, T6>()
+        where T1 : struct
+        where T2 : struct
+        where T3 : struct
+        where T4 : struct
+        where T5 : struct
+        where T6 : struct
+    {
+        return Query<T1, T2, T3, T4, T5>().With<T6>();
+    }
+
+    /// <summary>
+    /// Creates a query requiring component types <typeparamref name="T1"/> through
+    /// <typeparamref name="T7"/>.
+    /// </summary>
+    public Query Query<T1, T2, T3, T4, T5, T6, T7>()
+        where T1 : struct
+        where T2 : struct
+        where T3 : struct
+        where T4 : struct
+        where T5 : struct
+        where T6 : struct
+        where T7 : struct
+    {
+        return Query<T1, T2, T3, T4, T5, T6>().With<T7>();
+    }
+
+    /// <summary>
+    /// Creates a query requiring component types <typeparamref name="T1"/> through
+    /// <typeparamref name="T8"/>.
+    /// </summary>
+    public Query Query<T1, T2, T3, T4, T5, T6, T7, T8>()
+        where T1 : struct
+        where T2 : struct
+        where T3 : struct
+        where T4 : struct
+        where T5 : struct
+        where T6 : struct
+        where T7 : struct
+        where T8 : struct
+    {
+        return Query<T1, T2, T3, T4, T5, T6, T7>().With<T8>();
     }
 
     internal IComponentStorage GetOrCreateStorage<T>() where T : struct
@@ -507,6 +611,29 @@ public sealed class Registry
         }
     }
 
+    /// <summary>
+    /// Removes all frame-scoped event components.
+    /// </summary>
+    public void ClearEvents()
+    {
+        EnsureNotEnumerating();
+
+        var cleared = false;
+        foreach (var (type, storage) in _storages)
+        {
+            if (typeof(IEvent).IsAssignableFrom(type) && storage.Count != 0)
+            {
+                storage.Clear();
+                cleared = true;
+            }
+        }
+
+        if (cleared)
+        {
+            Version++;
+        }
+    }
+
     private void EnsureAlive(Entity entity)
     {
         if (!IsAlive(entity))
@@ -521,6 +648,15 @@ public sealed class Registry
         {
             throw new InvalidOperationException(
                 "Deferred component changes can only be scheduled while a query is being enumerated.");
+        }
+    }
+
+    private void EnsureNotEnumerating()
+    {
+        if (_activeEnumerators != 0)
+        {
+            throw new InvalidOperationException(
+                "Event components cannot be cleared while a query is being enumerated.");
         }
     }
 

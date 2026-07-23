@@ -23,17 +23,14 @@ public sealed class CameraFollowSystem : GameSystem, IGameSystemGroupState
 
     public override void Startup()
     {
-        _camera = Registry.Query()
-            .Include<Camera>()
-            .Include<CameraFollow>()
-            .Build();
+        _camera = Registry.Query<Camera, CameraFollow>();
     }
 
     public void Enter()
     {
         ref var level = ref Registry.Singleton<Level>();
-        var player = Registry.Query().Include<Player>().Build().Single();
-        var camera = Registry.Query().Include<Camera>().Build().Single();
+        var player = Registry.Query<Player>().Single();
+        var camera = Registry.Query<Camera>().Single();
 
         Registry.Set(camera, new CameraFollow
         {

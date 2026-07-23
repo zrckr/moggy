@@ -88,12 +88,7 @@ public sealed class AbilitiesSystem : GameSystem, IGameSystemGroupState
 
     public void Enter()
     {
-        _playerEntity = Registry.Query()
-            .Include<Player>()
-            .Include<Abilities>()
-            .Build()
-            .Single();
-
+        _playerEntity = Registry.Query<Player, Abilities>().Single();
         ref var runtime = ref Registry.Get<Abilities>(_playerEntity);
         runtime = new Abilities();
 

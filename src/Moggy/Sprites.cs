@@ -78,9 +78,7 @@ public sealed class SpriteSystem : GameSystem
 
     public override void Startup()
     {
-        _sprites = Registry.Query()
-            .Include<Sprite>()
-            .Build();
+        _sprites = Registry.Query<Sprite>();
     }
 
     public override void Update(Time time)

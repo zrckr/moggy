@@ -6,4 +6,6 @@
 internal interface IComponentStorage : IEntitySource
 {
     bool Remove(Entity entity);
+
+    void Clear();
 }

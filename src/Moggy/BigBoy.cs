@@ -21,13 +21,7 @@ public sealed class BigBoySystem : GameSystem
 
     public override void Startup()
     {
-        _player = Registry.Query()
-            .Include<BigBoy>()
-            .Include<Player>()
-            .Include<Piece>()
-            .Include<Sprite>()
-            .Build();
-
+        _player = Registry.Query<BigBoy, Player, Piece, Sprite>();
         _properties = Assets.LoadJson<AbilityProperties>("Player/BigBoy");
         _sprite = Assets.Load<SpriteAsset>(_properties.MoveSprite);
     }

@@ -14,12 +14,7 @@ public sealed class NormalSystem : GameSystem
 
     public override void Startup()
     {
-        _player = Registry.Query()
-            .Include<Normal>()
-            .Include<Player>()
-            .Include<Sprite>()
-            .Build();
-
+        _player = Registry.Query<Normal, Player, Sprite>();
         _properties = Assets.LoadJson<AbilityProperties>("Player/Normal");
     }
 

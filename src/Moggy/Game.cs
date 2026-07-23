@@ -140,6 +140,7 @@ public class Game : App
         if (State != GameState.Level || !IsPaused)
         {
             _gameSystems.Update(Time);
+            _registry.ClearEvents();
         }
     }
 

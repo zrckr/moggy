@@ -21,11 +21,7 @@ public sealed class CameraTool : ToolSystem
 
     public override void Startup()
     {
-        _camera = Registry.Query()
-            .Include<Camera>()
-            .Include<Viewport>()
-            .Include<CameraFollow>()
-            .Build();
+        _camera = Registry.Query<Camera, Viewport, CameraFollow>();
     }
 
     public override void Draw(Time time)

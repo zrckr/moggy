@@ -13,11 +13,7 @@ public sealed class PlayerTool : ToolSystem
 
     public override void Startup()
     {
-        _player = Registry.Query()
-            .Include<Player>()
-            .Include<Piece>()
-            .Include<Sprite>()
-            .Build();
+        _player = Registry.Query<Player, Piece, Sprite>();
     }
 
     public override void Draw(Time time)

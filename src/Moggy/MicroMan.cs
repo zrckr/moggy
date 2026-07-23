@@ -14,13 +14,7 @@ public sealed class MicroManSystem : GameSystem
 
     public override void Startup()
     {
-        _player = Registry.Query()
-            .Include<MicroMan>()
-            .Include<Player>()
-            .Include<Piece>()
-            .Include<Sprite>()
-            .Build();
-
+        _player = Registry.Query<MicroMan, Player, Piece, Sprite>();
         _properties = Assets.LoadJson<AbilityProperties>("Player/MicroMan");
     }
 
