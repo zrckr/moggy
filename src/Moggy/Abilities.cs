@@ -28,7 +28,7 @@ public readonly record struct AbilityEntered<T>(Entity Player) where T : struct,
 
 public readonly record struct AbilityExited<T>(Entity Player) where T : struct, IAbility;
 
-public sealed class AbilitiesGameSystem : GameSystem, IGameSystemGroupState
+public sealed class AbilitiesSystem : GameSystem, IGameSystemGroupState
 {
     private LevelProperties _properties = null!;
 

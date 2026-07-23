@@ -1,142 +1,81 @@
-using System.Numerics;
 using Foster.Framework;
 using Moggy.Ecs;
+using Serilog;
 
 namespace Moggy;
 
-public struct CameraFollow
+public struct CameraFollow()
 {
-    public Entity Target;
-    public Vector2 DragSize;
+    public Entity Target = Entity.Invalid;
+    public Rect Drag = Rect.Centered(0f, 0f);
+    public Rect Limits = Rect.Identity;
 }
 
 public sealed class CameraFollowSystem : GameSystem, IGameSystemGroupState
 {
-    private static readonly Vector2 DefaultDragSize = new(96f, 80f);
+    private const float Half = 0.5f;
 
-    private Query _cameras = null!;
+    private static readonly ILogger Logger = Serilog.Log.ForContext<CameraFollowSystem>();
 
-    private Query _followingCamera = null!;
+    private static readonly Rect DefaultDrag = Rect.Centered(96f, 80f);
 
-    private Query _player = null!;
+    private Query _camera = null!;
 
     public override void Startup()
     {
-        _cameras = Registry.Query()
-            .Include<Camera>()
-            .Include<Viewport>()
-            .Build();
-
-        _followingCamera = Registry.Query()
+        _camera = Registry.Query()
             .Include<Camera>()
             .Include<CameraFollow>()
-            .Include<Viewport>()
             .Build();
-
-        _player = Registry.Query()
-            .Include<Player>()
-            .Include<Sprite>()
-            .Build();
-
-    }
-
-    public override void Update(Time time)
-    {
-        if (!_followingCamera.Any())
-        {
-            return;
-        }
-
-        var cameraEntity = _followingCamera.Single();
-        EnsureFollowTarget(cameraEntity);
-
-        ref var camera = ref Registry.Get<Camera>(cameraEntity);
-        ref var follow = ref Registry.Get<CameraFollow>(cameraEntity);
-
-        var halfDrag = follow.DragSize / (2f * camera.Zoom);
-        var min = camera.Position - halfDrag;
-        var max = camera.Position + halfDrag;
-
-        ref var sprite = ref Registry.Get<Sprite>(follow.Target);
-        var targetPosition = sprite.Transform.Position;
-        if (targetPosition.X < min.X)
-        {
-            camera.Position.X = targetPosition.X + halfDrag.X;
-        }
-        else if (targetPosition.X > max.X)
-        {
-            camera.Position.X = targetPosition.X - halfDrag.X;
-        }
-
-        if (targetPosition.Y < min.Y)
-        {
-            camera.Position.Y = targetPosition.Y + halfDrag.Y;
-        }
-        else if (targetPosition.Y > max.Y)
-        {
-            camera.Position.Y = targetPosition.Y - halfDrag.Y;
-        }
-
-        ref var viewport = ref Registry.Get<Viewport>(cameraEntity);
-        ClampToLevelBounds(ref camera, in viewport);
     }
 
     public void Enter()
     {
-        var camera = _cameras.Single();
-        var target = _player.Single();
-        if (Registry.Has<CameraFollow>(camera))
+        ref var level = ref Registry.Singleton<Level>();
+        var player = Registry.Query().Include<Player>().Build().Single();
+        var camera = Registry.Query().Include<Camera>().Build().Single();
+
+        Registry.Set(camera, new CameraFollow
         {
-            ref var follow = ref Registry.Get<CameraFollow>(camera);
-            follow.Target = target;
-        }
-        else
-        {
-            Registry.Set(camera, new CameraFollow
-            {
-                Target = target,
-                DragSize = DefaultDragSize
-            });
-        }
+            Target = player,
+            Drag = DefaultDrag,
+            Limits = Rect.Centered(level.Width, level.Height)
+        });
     }
 
-    public void Exit()
+    public override void Update(Time time)
     {
-        if (!_cameras.Any())
+        if (!_camera.Any())
         {
             return;
         }
 
-        var camera = _cameras.Single();
-        if (Registry.Has<CameraFollow>(camera))
+        var cameraEntity = _camera.Single();
+        ref var follow = ref Registry.Get<CameraFollow>(cameraEntity);
+        if (follow.Target == Entity.Invalid || !Registry.Has<Sprite>(follow.Target))
         {
-            Registry.Remove<CameraFollow>(camera);
+            Logger.Warning("No target with sprite found for camera to follow.");
+            return;
         }
+
+        ref var target = ref Registry.Get<Sprite>(follow.Target);
+        ref var camera = ref Registry.Get<Camera>(cameraEntity);
+        var position = camera.Position;
+
+        // Move the local drag box into world space
+        var drawWorld = follow.Drag.Translate(camera.Position);
+
+        // Move camera only when target leaves the drag box
+        position += drawWorld.Difference(target.Transform.Position);
+
+        // Keep the camera's world-space bounds inside the follow limits
+        var cameraBounds = camera.Bounds.Translate(position - camera.Position);
+        position -= follow.Limits.Difference(cameraBounds);
+        camera.Position = position;
     }
 
-    private void EnsureFollowTarget(Entity camera)
+    public void Exit()
     {
-        ref var follow = ref Registry.Get<CameraFollow>(camera);
-        if (!Registry.IsAlive(follow.Target))
-        {
-            follow.Target = _player.Single();
-        }
-    }
-
-    private void ClampToLevelBounds(ref Camera camera, in Viewport viewport)
-    {
-        ref var level = ref Registry.Singleton<Level>();
-        var halfVisible = new Vector2(viewport.ContentBounds.Width, viewport.ContentBounds.Height) / (2f * camera.Zoom);
-        var halfLevel = new Vector2(level.Width, level.Height) * 0.5f;
-
-        camera.Position.X = ClampAxis(camera.Position.X, halfVisible.X, halfLevel.X);
-        camera.Position.Y = ClampAxis(camera.Position.Y, halfVisible.Y, halfLevel.Y);
-    }
-
-    private static float ClampAxis(float position, float halfVisible, float halfGrid)
-    {
-        return halfVisible >= halfGrid
-            ? 0f
-            : Math.Clamp(position, -halfGrid + halfVisible, halfGrid - halfVisible);
+        Registry.Remove<CameraFollow>(_camera.Single());
     }
 }

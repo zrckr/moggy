@@ -19,9 +19,9 @@ public struct LevelRuntime()
     public int Score = 0;
 }
 
-public sealed class LevelRuntimeGameSystem : GameSystem, IGameSystemGroupState
+public sealed class LevelRuntimeSystem : GameSystem, IGameSystemGroupState
 {
-    private static readonly ILogger Logger = Serilog.Log.ForContext<LevelRuntimeGameSystem>();
+    private static readonly ILogger Logger = Serilog.Log.ForContext<LevelRuntimeSystem>();
 
     private LevelProperties _properties = null!;
 

@@ -79,26 +79,25 @@ public class Game : App
     {
         _view = _registry.Create(
             new Viewport(Mathz.VirtualWidth, Mathz.VirtualHeight, Mathz.ViewportSize),
-            new Camera(Vector2.Zero));
+            new Camera()
+        );
         _screen = new Target(GraphicsDevice, Mathz.VirtualWidth, Mathz.VirtualHeight, "GameScreen");
         _batcher = new Batcher(GraphicsDevice);
         _imgui = new ImGuiRenderer(this);
         _assets = new AssetLoader(this);
 
         var levelSystems = new GameSystemGroup(
-            CreateSystem<LevelRuntimeGameSystem>(),
-            CreateSystem<LevelGameSystem>(),
+            CreateSystem<LevelRuntimeSystem>(),
+            CreateSystem<LevelSystem>(),
             CreateSystem<ChaosSystem>(),
-            CreateSystem<PlayerGameSystem>(),
-            CreateSystem<AbilitiesGameSystem>(),
+            CreateSystem<PlayerSystem>(),
+            CreateSystem<AbilitiesSystem>(),
             CreateSystem<NormalSystem>(),
             CreateSystem<BigBoySystem>(),
             CreateSystem<MicroManSystem>(),
-            CreateSystem<NavigationGameSystem>(),
-            CreateSystem<EnemyGameSystem>(),
+            CreateSystem<EnemySystem>(),
             CreateSystem<BugSystem>(),
-            CreateSystem<CameraPathSystem>(),
-            CreateSystem<LevelMoverSystem>(),
+            CreateSystem<PieceSystem>(),
             CreateSystem<CameraFollowSystem>(),
             CreateSystem<CameraSystem>(),
             CreateSystem<SpriteSystem>(),

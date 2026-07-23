@@ -31,13 +31,10 @@ public sealed class NormalSystem : GameSystem
         }
 
         var playerEntity = _player.Single();
+        ref var player = ref Registry.Get<Player>(playerEntity);
         ref var sprite = ref Registry.Get<Sprite>(playerEntity);
-        sprite.Transform.Scale = Vector2.One * _properties.Scale;
 
-        if (Registry.Has<LevelMover>(playerEntity))
-        {
-            ref var mover = ref Registry.Get<LevelMover>(playerEntity);
-            mover.Speed = _properties.MovementSpeed;
-        }
+        player.MovementSpeed = _properties.MovementSpeed;
+        sprite.Transform.Scale = Vector2.One * _properties.Scale;
     }
 }

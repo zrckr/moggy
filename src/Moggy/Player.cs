@@ -28,12 +28,12 @@ public struct Player()
 
     public PlayerState PreviousState { get; private set; } = PlayerState.Idle;
 
-    public FaceDirection Direction = FaceDirection.Down;
+    public float MovementSpeed = 0f;
 
     public FaceDirection? BufferedDirection = null;
 }
 
-public sealed class PlayerGameSystem : GameSystem, IGameSystemGroupState
+public sealed class PlayerSystem : GameSystem, IGameSystemGroupState
 {
     private VirtualDevice _inputDevice = null!;
 
@@ -55,69 +55,66 @@ public sealed class PlayerGameSystem : GameSystem, IGameSystemGroupState
 
         _inputDevice = new VirtualDevice(Game.Input, "Player");
         _inputDevice.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
-        _moveStick = _inputDevice.AddStick("Move",
-            new StickBindingSet()
-                .AddWasd()
-                .AddArrowKeys());
+        _moveStick = _inputDevice.AddStick("Move", new StickBindingSet().AddWasd().AddArrowKeys());
+    }
+
+    public void Enter()
+    {
+        ref var level = ref Registry.Singleton<Level>();
+        _playerEntity = Registry.Create(
+            new Abilities(),
+            new Player
+            {
+                MovementSpeed = _properties.MovementSpeed
+            },
+            new Piece(new Cell(level.Columns / 2, level.Rows / 2)), // TODO: Magezen: Player spawn
+            new Sprite
+            {
+                Asset = _idleSprite,
+                Transform = new Transform { Scale = new Vector2(_properties.Scale) },
+                Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
+            }
+        );
+
+        Registry.SetTag<Normal>(_playerEntity);
     }
 
     public override void Update(Time time)
     {
         ref var level = ref Registry.Singleton<Level>();
         ref var player = ref Registry.Get<Player>(_playerEntity);
-        ref var transform = ref Registry.Get<LevelTransform>(_playerEntity);
+        ref var piece = ref Registry.Get<Piece>(_playerEntity);
         ref var sprite = ref Registry.Get<Sprite>(_playerEntity);
 
-        if (Registry.Has<LevelMover>(_playerEntity))
+        if (Registry.Has<PieceMove>(_playerEntity))
         {
             player.BufferedDirection = _moveStick.ToFaceDirection();
             player.State = PlayerState.Move;
-            sprite.Asset = _moveSprite;
         }
         else
         {
             player.State = PlayerState.Idle;
 
-            if (TryChooseMoveDirection(ref player, in level, in transform, out var direction) &&
-                TryStartMove(_playerEntity, in level, in transform, direction))
+            var destination = ChooseDestinationPosition(ref player, piece, level);
+            if (destination.HasValue)
             {
                 player.State = PlayerState.Move;
-                sprite.Asset = _moveSprite;
-            }
-            else
-            {
-                sprite.Asset = _idleSprite;
+                Registry.Set(_playerEntity, new PieceMove(piece.Position, destination.Value, player.MovementSpeed));
             }
         }
 
-        sprite.Animation.SetName(player.Direction.GetAnimationName());
-        sprite.FlipH = player.Direction.IsAnimationFlipped();
+        sprite.Asset = player.State switch
+        {
+            PlayerState.Idle => _idleSprite,
+            PlayerState.Move => _moveSprite,
+            _ => throw new InvalidOperationException()
+        };
+
+        sprite.Animation.SetName(piece.FacingDirection.GetAnimationName());
+        sprite.FlipH = piece.FacingDirection.IsAnimationFlipped();
     }
 
-    private bool TryStartMove(Entity entity, in Level level, in LevelTransform levelTransform, FaceDirection direction)
-    {
-        if (!level.TryResolveMove(levelTransform.Position, direction, out var move))
-        {
-            return false;
-        }
-
-        Registry.Set(entity, new LevelMover
-        {
-            From = levelTransform.Position,
-            To = move.To,
-            VisualWrapTo = move.VisualWrapTo,
-            Progress = 0f,
-            Speed = _properties.MovementSpeed
-        });
-
-        return true;
-    }
-
-    private bool TryChooseMoveDirection(
-        ref Player player,
-        in Level level,
-        in LevelTransform levelTransform,
-        out FaceDirection direction)
+    private Cell? ChooseDestinationPosition(ref Player player, in Piece piece, in Level level)
     {
         FaceDirection? requested = null;
         if (player.BufferedDirection is { } buffered)
@@ -132,19 +129,22 @@ public sealed class PlayerGameSystem : GameSystem, IGameSystemGroupState
 
         if (!requested.HasValue)
         {
-            direction = default;
-            return false;
+            return null;
         }
 
-        player.Direction = requested.Value;
-        if (!level.TryResolveMove(levelTransform.Position, requested.Value, out _))
+        var direction = requested.Value.ToPoint2();
+        var destination = piece.Position;
+        destination.Column += direction.X;
+        destination.Row += direction.Y;
+        return !level.IsWalkable(destination) ? null : destination;
+    }
+
+    public void Exit()
+    {
+        if (Registry.Destroy(_playerEntity))
         {
-            direction = default;
-            return false;
+            _playerEntity = Entity.Invalid;
         }
-
-        direction = requested.Value;
-        return true;
     }
 
     public override void Shutdown()
@@ -152,34 +152,5 @@ public sealed class PlayerGameSystem : GameSystem, IGameSystemGroupState
         _inputDevice.Dispose();
         _moveSprite.Dispose();
         _idleSprite.Dispose();
-    }
-
-    public void Enter()
-    {
-        ref var level = ref Registry.Singleton<Level>();
-        var startCell = level.FindNearestWalkableCell(new Cell(level.Columns / 2, level.Rows / 2));
-
-        _playerEntity = Registry.Create(
-            new Player(),
-            new LevelTransform
-            {
-                Position = startCell
-            },
-            new Sprite
-            {
-                Asset = _idleSprite,
-                Transform = new Transform(level.CellToCenter(startCell), new Vector2(_properties.Scale), 0f),
-                Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
-            },
-            new Abilities());
-
-        Registry.SetTag<NavigationTarget>(_playerEntity);
-        Registry.SetTag<Normal>(_playerEntity);
-    }
-
-    public void Exit()
-    {
-        Registry.Destroy(_playerEntity);
-        _playerEntity = Entity.Invalid;
     }
 }

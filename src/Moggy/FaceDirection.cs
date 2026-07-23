@@ -51,51 +51,19 @@ public static class FaceDirectionExtensions
 
     public static FaceDirection? ToFaceDirection(this Vector2 vector)
     {
-        if (vector.X < 0f)
-        {
-            return FaceDirection.Left;
-        }
-
-        if (vector.X > 0f)
-        {
-            return FaceDirection.Right;
-        }
-
-        if (vector.Y < 0f)
-        {
-            return FaceDirection.Up;
-        }
-
-        if (vector.Y > 0f)
-        {
-            return FaceDirection.Down;
-        }
-
+        if (vector.X < 0f) return FaceDirection.Left;
+        if (vector.X > 0f) return FaceDirection.Right;
+        if (vector.Y < 0f) return FaceDirection.Up;
+        if (vector.Y > 0f) return FaceDirection.Down;
         return null;
     }
 
     public static FaceDirection? ToFaceDirection(this VirtualStick move)
     {
-        if (move.PressedLeft)
-        {
-            return FaceDirection.Left;
-        }
-
-        if (move.PressedRight)
-        {
-            return FaceDirection.Right;
-        }
-
-        if (move.PressedUp)
-        {
-            return FaceDirection.Up;
-        }
-
-        if (move.PressedDown)
-        {
-            return FaceDirection.Down;
-        }
-
+        if (move.PressedLeft) return FaceDirection.Left;
+        if (move.PressedRight) return FaceDirection.Right;
+        if (move.PressedUp) return FaceDirection.Up;
+        if (move.PressedDown) return FaceDirection.Down;
         return null;
     }
 
@@ -122,28 +90,20 @@ public static class FaceDirectionExtensions
         };
     }
 
+    public static string GetAnimationName2D(this FaceDirection faceDirection)
+    {
+        return faceDirection switch
+        {
+            FaceDirection.Up or FaceDirection.Down => "vertical",
+            FaceDirection.Left or FaceDirection.Right => "horizontal",
+            _ => throw new ArgumentOutOfRangeException(nameof(faceDirection), faceDirection, null)
+        };
+    }
+
     public static bool IsAnimationFlipped(this FaceDirection faceDirection)
     {
         return faceDirection == FaceDirection.Right;
     }
 
-    public static bool IsAdjacent(this FaceDirection faceDirection, FaceDirection candidate)
-    {
-        return faceDirection switch
-        {
-            FaceDirection.Up or FaceDirection.Down => candidate is FaceDirection.Left or FaceDirection.Right,
-            FaceDirection.Left or FaceDirection.Right => candidate is FaceDirection.Up or FaceDirection.Down,
-            _ => throw new ArgumentOutOfRangeException(nameof(faceDirection), faceDirection, null)
-        };
-    }
 
-    public static (FaceDirection, FaceDirection) GetAdjacentDirections(this FaceDirection faceDirection)
-    {
-        return faceDirection switch
-        {
-            FaceDirection.Up or FaceDirection.Down => (FaceDirection.Left, FaceDirection.Right),
-            FaceDirection.Left or FaceDirection.Right => (FaceDirection.Up, FaceDirection.Down),
-            _ => throw new ArgumentOutOfRangeException(nameof(faceDirection), faceDirection, null)
-        };
-    }
 }

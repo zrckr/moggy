@@ -25,7 +25,6 @@ public sealed class ToolsHost
         RegisterTool<CameraTool>();
         RegisterTool<GridTool>();
         RegisterTool<LevelTilesTool>();
-        RegisterTool<NavigationTool>();
     }
 
     public void Draw(Time time)

@@ -1,6 +1,7 @@
 ﻿{
   "Count": 4,
+  "Scale": 2.0,
   "MovementSpeed": 4.0,
   "SpawnSeed": 0,
-  "MoveSprite": "Divil/Move"
+  "MoveSprite": "Divil/Move",
 }

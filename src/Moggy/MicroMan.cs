@@ -17,6 +17,7 @@ public sealed class MicroManSystem : GameSystem
         _player = Registry.Query()
             .Include<MicroMan>()
             .Include<Player>()
+            .Include<Piece>()
             .Include<Sprite>()
             .Build();
 
@@ -25,12 +26,6 @@ public sealed class MicroManSystem : GameSystem
 
     public override void Update(Time time)
     {
-        ref var level = ref Registry.Singleton<LevelRuntime>();
-        if (level.State != LevelState.Active)
-        {
-            return;
-        }
-
         if (!_player.Any())
         {
             return;
@@ -38,16 +33,12 @@ public sealed class MicroManSystem : GameSystem
 
         var playerEntity = _player.Single();
         ref var player = ref Registry.Get<Player>(playerEntity);
+        ref var piece = ref Registry.Get<Piece>(playerEntity);
         ref var sprite = ref Registry.Get<Sprite>(playerEntity);
 
+        player.MovementSpeed = _properties.MovementSpeed;
         sprite.Transform.Scale = Vector2.One * _properties.Scale;
-        sprite.Animation.SetName(player.Direction.GetAnimationName());
-        sprite.FlipH = player.Direction.IsAnimationFlipped();
-
-        if (Registry.Has<LevelMover>(playerEntity))
-        {
-            ref var mover = ref Registry.Get<LevelMover>(playerEntity);
-            mover.Speed = _properties.MovementSpeed;
-        }
+        sprite.Animation.SetName(piece.FacingDirection.GetAnimationName());
+        sprite.FlipH = piece.FacingDirection.IsAnimationFlipped();
     }
 }

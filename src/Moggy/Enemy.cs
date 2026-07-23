@@ -13,25 +13,21 @@ public sealed record EnemyProperties
 
     public int SpawnSeed { get; init; }
 
+    public float Scale { get; init; } = 1f;
+
     public string MoveSprite { get; init; } = string.Empty;
 }
 
 public struct Enemy()
 {
-    public FaceDirection Direction = FaceDirection.Down;
-
-    public float MovementSpeed;
+    public float MovementSpeed = 0f;
 }
 
-public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
+public sealed class EnemySystem : GameSystem, IGameSystemGroupState
 {
-    private Query _target = null!;
-
     private EnemyProperties _properties = null!;
 
     private SpriteAsset _moveSprite = null!;
-
-    private readonly HashSet<Cell> _claimedCells = [];
 
     private readonly List<Entity> _enemyEntities = new();
 
@@ -39,73 +35,42 @@ public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
     {
         _properties = Assets.LoadJson<EnemyProperties>("Enemy/Properties");
         _moveSprite = Assets.Load<SpriteAsset>(_properties.MoveSprite);
-
-        _target = Registry.Query()
-            .Include<NavigationTarget>()
-            .Include<LevelTransform>()
-            .Build();
-    }
-
-    public override void Update(Time time)
-    {
-        ref var level = ref Registry.Singleton<Level>();
-        ref var navigation = ref Registry.Singleton<Navigation>();
-        ref var levelTransform = ref Registry.Get<LevelTransform>(_target.Single());
-
-        // Claim current cells and destinations before planning this frame's moves.
-        ClaimOccupiedCells();
-
-        foreach (var entity in _enemyEntities)
-        {
-            ref var enemy = ref Registry.Get<Enemy>(entity);
-            ref var transform = ref Registry.Get<LevelTransform>(entity);
-            ref var sprite = ref Registry.Get<Sprite>(entity);
-
-            if (!Registry.Has<LevelMover>(entity))
-            {
-                var startedMove = false;
-                if (level.TryRaycast(transform.Position, levelTransform.Position, out var direction))
-                {
-                    navigation.ResetTrace(levelTransform.Position);
-                    startedMove = TryStartDirectedMove(entity, ref enemy, in level, in transform, direction);
-                }
-
-                if (!startedMove &&
-                    !TryStartTraceMove(entity, ref enemy, in level, in navigation, in transform))
-                {
-                    TryStartMove(entity, ref enemy, in level, in navigation, in transform);
-                }
-            }
-
-            sprite.Animation.SetName(enemy.Direction.GetAnimationName());
-            sprite.FlipH = enemy.Direction.IsAnimationFlipped();
-        }
     }
 
     public void Enter()
     {
         ref var level = ref Registry.Singleton<Level>();
-        var spawnCells = new HashSet<Cell>();
         var random = new Random(_properties.SpawnSeed);
 
-        _enemyEntities.Clear();
         for (var index = 0; index < _properties.Count; index++)
         {
             var origin = new Cell(random.Next(level.Columns), random.Next(level.Rows));
-            var startCell = FindNearestUnclaimedWalkableCell(in level, origin, spawnCells);
-            spawnCells.Add(startCell);
-
             var enemy = Registry.Create(
-                new Enemy { MovementSpeed = _properties.MovementSpeed },
-                new LevelTransform { Position = startCell },
+                new Enemy
+                {
+                    MovementSpeed = _properties.MovementSpeed
+                },
+                new Piece(origin),
                 new Sprite
                 {
                     Asset = _moveSprite,
-                    Transform = new Transform(level.CellToCenter(startCell), new Vector2(2f), 0f),
+                    Transform = new Transform { Scale = new Vector2(_properties.Scale) },
                     Animation = new SpriteAnimation(FaceDirection.Down.GetAnimationName())
                 });
 
             _enemyEntities.Add(enemy);
+        }
+    }
+
+    public override void Update(Time time)
+    {
+        foreach (var entity in _enemyEntities)
+        {
+            ref var piece = ref Registry.Get<Piece>(entity);
+            ref var sprite = ref Registry.Get<Sprite>(entity);
+
+            sprite.Animation.SetName(piece.FacingDirection.GetAnimationName());
+            sprite.FlipH = piece.FacingDirection.IsAnimationFlipped();
         }
     }
 
@@ -117,218 +82,10 @@ public sealed class EnemyGameSystem : GameSystem, IGameSystemGroupState
         }
 
         _enemyEntities.Clear();
-        _claimedCells.Clear();
-    }
-
-    private void TryStartMove(
-        Entity entity,
-        ref Enemy enemy,
-        in Level level,
-        in Navigation navigation,
-        in LevelTransform transform)
-    {
-        var distance = navigation.GetDistance(in level, transform.Position);
-        if (distance == Navigation.Unreachable)
-        {
-            return;
-        }
-
-        if (transform.Position == navigation.Target)
-        {
-            return;
-        }
-
-        var bestDistance = distance;
-        var bestDirection = default(FaceDirection);
-        var bestMove = default(LevelMove);
-        var reverseDirection = enemy.Direction.Opposite();
-        var reverseMove = default(LevelMove);
-        var canReverse = false;
-
-        foreach (var direction in Enum.GetValues<FaceDirection>())
-        {
-            if (!level.TryResolveMove(transform.Position, direction, out var move) ||
-                _claimedCells.Contains(move.To))
-            {
-                continue;
-            }
-
-            if (direction == reverseDirection)
-            {
-                reverseMove = move;
-                canReverse = true;
-                continue;
-            }
-
-            var targetDistance = navigation.GetDistance(in level, move.To);
-            if (targetDistance == Navigation.Unreachable || targetDistance >= bestDistance)
-            {
-                continue;
-            }
-
-            bestDistance = targetDistance;
-            bestDirection = direction;
-            bestMove = move;
-        }
-
-        if (bestDistance != distance)
-        {
-            StartMove(entity, ref enemy, transform.Position, bestDirection, bestMove);
-            return;
-        }
-
-        if (!canReverse)
-        {
-            return;
-        }
-
-        // A dead end or reservation leaves reversing as the only viable route.
-        StartMove(entity, ref enemy, transform.Position, reverseDirection, reverseMove);
-    }
-
-    private bool TryStartTraceMove(
-        Entity entity,
-        ref Enemy enemy,
-        in Level level,
-        in Navigation navigation,
-        in LevelTransform transform)
-    {
-        if (!navigation.TryGetTraceSuccessor(transform.Position, out var target) ||
-            !TryResolveTraceDirection(in level, transform.Position, target, out var direction))
-        {
-            return false;
-        }
-
-        return TryStartDirectedMove(entity, ref enemy, in level, in transform, direction);
-    }
-
-    private static bool TryResolveTraceDirection(
-        in Level level,
-        Cell origin,
-        Cell target,
-        out FaceDirection direction)
-    {
-        foreach (var candidate in Enum.GetValues<FaceDirection>())
-        {
-            if (!level.TryResolveMove(origin, candidate, out var move))
-            {
-                continue;
-            }
-
-            if (move.To != target)
-            {
-                continue;
-            }
-
-            direction = candidate;
-            return true;
-        }
-
-        direction = default;
-        return false;
-    }
-
-    private bool TryStartDirectedMove(
-        Entity entity,
-        ref Enemy enemy,
-        in Level level,
-        in LevelTransform transform,
-        FaceDirection direction)
-    {
-        if (direction == enemy.Direction.Opposite())
-        {
-            return false;
-        }
-
-        if (!level.TryResolveMove(transform.Position, direction, out var move) ||
-            _claimedCells.Contains(move.To))
-        {
-            return false;
-        }
-
-        StartMove(entity, ref enemy, transform.Position, direction, move);
-        return true;
-    }
-
-    private void StartMove(
-        Entity entity,
-        ref Enemy enemy,
-        Cell from,
-        FaceDirection direction,
-        LevelMove move)
-    {
-        enemy.Direction = direction;
-        _claimedCells.Add(move.To);
-
-        Registry.Set(entity, new LevelMover
-        {
-            From = from,
-            To = move.To,
-            VisualWrapTo = move.VisualWrapTo,
-            Speed = enemy.MovementSpeed
-        });
-    }
-
-    private void ClaimOccupiedCells()
-    {
-        _claimedCells.Clear();
-
-        foreach (var entity in _enemyEntities)
-        {
-            ref var transform = ref Registry.Get<LevelTransform>(entity);
-            _claimedCells.Add(transform.Position);
-
-            if (!Registry.Has<LevelMover>(entity))
-            {
-                continue;
-            }
-
-            ref var mover = ref Registry.Get<LevelMover>(entity);
-            _claimedCells.Add(mover.To);
-        }
     }
 
     public override void Shutdown()
     {
         _moveSprite.Dispose();
-    }
-
-    private static Cell FindNearestUnclaimedWalkableCell(
-        in Level level,
-        Cell origin,
-        IReadOnlySet<Cell> claimedCells)
-    {
-        var nearest = default(Cell);
-        var nearestDistance = int.MaxValue;
-        var found = false;
-
-        for (var row = 0; row < level.Rows; row++)
-        {
-            for (var column = 0; column < level.Columns; column++)
-            {
-                var cell = new Cell(column, row);
-                if (!level.IsWalkable(cell) || claimedCells.Contains(cell))
-                {
-                    continue;
-                }
-
-                var distance = Math.Abs(cell.Row - origin.Row) + Math.Abs(cell.Column - origin.Column);
-                if (distance >= nearestDistance)
-                {
-                    continue;
-                }
-
-                nearest = cell;
-                nearestDistance = distance;
-                found = true;
-            }
-        }
-
-        if (!found)
-        {
-            throw new InvalidOperationException("Level does not have enough walkable cells for enemies.");
-        }
-
-        return nearest;
     }
 }

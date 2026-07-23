@@ -1,3 +1,4 @@
+using System.Globalization;
 using Foster.Framework;
 using ImGuiNET;
 using Moggy.Ecs;
@@ -14,7 +15,7 @@ public sealed class PlayerTool : ToolSystem
     {
         _player = Registry.Query()
             .Include<Player>()
-            .Include<LevelTransform>()
+            .Include<Piece>()
             .Include<Sprite>()
             .Build();
     }
@@ -25,24 +26,25 @@ public sealed class PlayerTool : ToolSystem
         if (ImGui.Begin(Title, ref IsOpen, ImGuiWindowFlags.AlwaysAutoResize))
         {
             ref var player = ref Registry.Get<Player>(entity);
-            ref var levelTransform = ref Registry.Get<LevelTransform>(entity);
+            ref var piece = ref Registry.Get<Piece>(entity);
             ref var sprite = ref Registry.Get<Sprite>(entity);
 
-            ImGui.LabelText("Entity", entity.Id.ToString());
+            ImGui.SeparatorText("Player");
             ImGui.LabelText("State", player.State.ToString());
             ImGui.LabelText("Previous", player.PreviousState.ToString());
-            ImGui.LabelText("Direction", player.Direction.ToString());
             ImGui.LabelText("Buffered", player.BufferedDirection?.ToString() ?? "-");
+            ImGui.LabelText("Movement Speed", player.MovementSpeed.ToString(CultureInfo.InvariantCulture));
 
-            ImGui.SeparatorText("Movement");
-            ImGui.LabelText("Cell", levelTransform.Position.ToString());
+            ImGui.SeparatorText("Piece");
+            ImGui.LabelText("Cell", piece.Position.ToString());
+            ImGui.LabelText("Facing Direction", piece.FacingDirection.ToString());
+            ImGui.LabelText("Moving", Registry.Has<PieceMove>(entity).ToString());
+
+            ImGui.SeparatorText("Sprite");
             ImGui.LabelText("Position", sprite.Transform.Position.ToString());
             ImGui.LabelText("Scale", sprite.Transform.Scale.ToString());
-            ImGui.LabelText("Moving", Registry.Has<LevelMover>(entity).ToString());
-
             if (sprite.Animation is { } animation)
             {
-                ImGui.SeparatorText("Animation");
                 ImGui.LabelText("Animation", animation.Name);
                 ImGui.LabelText("Frame", animation.Frame.ToString());
             }

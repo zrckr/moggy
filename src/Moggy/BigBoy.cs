@@ -24,6 +24,7 @@ public sealed class BigBoySystem : GameSystem
         _player = Registry.Query()
             .Include<BigBoy>()
             .Include<Player>()
+            .Include<Piece>()
             .Include<Sprite>()
             .Build();
 
@@ -33,12 +34,6 @@ public sealed class BigBoySystem : GameSystem
 
     public override void Update(Time time)
     {
-        ref var level = ref Registry.Singleton<LevelRuntime>();
-        if (level.State != LevelState.Active)
-        {
-            return;
-        }
-
         if (!_player.Any())
         {
             return;
@@ -46,22 +41,14 @@ public sealed class BigBoySystem : GameSystem
 
         var playerEntity = _player.Single();
         ref var player = ref Registry.Get<Player>(playerEntity);
+        ref var piece = ref Registry.Get<Piece>(playerEntity);
         ref var sprite = ref Registry.Get<Sprite>(playerEntity);
 
-        var animationName = player.Direction is FaceDirection.Up or FaceDirection.Down
-            ? VerticalAnimation
-            : HorizontalAnimation;
-
+        player.MovementSpeed = _properties.MovementSpeed;
         sprite.Asset = _sprite;
         sprite.Transform.Scale = Vector2.One * _properties.Scale;
-        sprite.Animation.SetName(animationName);
-        sprite.FlipH = player.Direction.IsAnimationFlipped();
-
-        if (Registry.Has<LevelMover>(playerEntity))
-        {
-            ref var mover = ref Registry.Get<LevelMover>(playerEntity);
-            mover.Speed = _properties.MovementSpeed;
-        }
+        sprite.Animation.SetName(piece.FacingDirection.GetAnimationName2D());
+        sprite.FlipH = piece.FacingDirection.IsAnimationFlipped();
     }
 
     public override void Shutdown()
